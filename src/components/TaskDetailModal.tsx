@@ -265,6 +265,54 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
                 )}
               </div>
 
+              {/* Priority */}
+              <div>
+                <label className="block text-sm font-medium text-white/70 mb-3">Priority</label>
+                <div className="flex flex-wrap gap-2">
+                  {(Object.keys(priorityConfig) as Task['priority'][]).map((p) => {
+                    const config = priorityConfig[p];
+                    const isActive = task.priority === p;
+                    return (
+                      <button
+                        key={p}
+                        onClick={() => handleFieldUpdate('priority', p)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${
+                          isActive
+                            ? config.color
+                            : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'
+                        }`}
+                      >
+                        <span className="text-sm font-medium">{config.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Due Date */}
+              <div>
+                <label className="block text-sm font-medium text-white/70 mb-2">Due Date</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="date"
+                    value={task.due_date || ''}
+                    onChange={(e) => handleFieldUpdate('due_date', e.target.value || null)}
+                    className="px-4 py-2.5 bg-black/30 border border-white/10 rounded-xl text-white focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 [color-scheme:dark]"
+                  />
+                  {task.due_date && (
+                    <button
+                      onClick={() => handleFieldUpdate('due_date', null)}
+                      className="px-3 py-2 text-white/50 hover:text-white/80 hover:bg-white/10 rounded-xl transition-all text-sm"
+                    >
+                      Clear
+                    </button>
+                  )}
+                  {isOverdue && (
+                    <span className="text-red-400 text-sm font-medium">⚠️ Overdue</span>
+                  )}
+                </div>
+              </div>
+
               {/* Status */}
               <div>
                 <label className="block text-sm font-medium text-white/70 mb-3">Status</label>
