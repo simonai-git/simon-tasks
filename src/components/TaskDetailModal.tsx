@@ -97,6 +97,21 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
     }
   };
 
+  const handleAssigneeChange = async (newAssignee: Task['assignee']) => {
+    if (!task) return;
+    try {
+      const res = await fetch(`/api/tasks/${task.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ assignee: newAssignee }),
+      });
+      const updatedTask = await res.json();
+      onUpdate(updatedTask);
+    } catch (error) {
+      console.error('Error updating assignee:', error);
+    }
+  };
+
   if (!isOpen || !task) return null;
 
   const status = statusConfig[task.status];
@@ -157,6 +172,33 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
                   >
                     <span>{config.icon}</span>
                     <span className="text-sm font-medium">{config.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Assignee */}
+          <div>
+            <label className="block text-sm font-medium text-white/70 mb-3">Assignee</label>
+            <div className="flex gap-2">
+              {(['Simon', 'Bogdan'] as Task['assignee'][]).map((a) => {
+                const isActive = task.assignee === a;
+                const config = a === 'Simon' 
+                  ? { emoji: '🦊', color: 'bg-purple-500/20 border-purple-500/50 text-purple-300' }
+                  : { emoji: '👤', color: 'bg-blue-500/20 border-blue-500/50 text-blue-300' };
+                return (
+                  <button
+                    key={a}
+                    onClick={() => handleAssigneeChange(a)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${
+                      isActive
+                        ? config.color
+                        : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'
+                    }`}
+                  >
+                    <span>{config.emoji}</span>
+                    <span className="text-sm font-medium">{a}</span>
                   </button>
                 );
               })}
