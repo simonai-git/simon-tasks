@@ -37,6 +37,7 @@ async function initDb() {
         ALTER TABLE tasks ADD COLUMN IF NOT EXISTS progress INTEGER DEFAULT 0;
         ALTER TABLE tasks ADD COLUMN IF NOT EXISTS is_blocked BOOLEAN DEFAULT FALSE;
         ALTER TABLE tasks ADD COLUMN IF NOT EXISTS blocked_reason TEXT;
+        ALTER TABLE tasks ADD COLUMN IF NOT EXISTS agent_context TEXT;
       EXCEPTION WHEN OTHERS THEN NULL;
       END $$;
     `);
@@ -86,6 +87,7 @@ export interface Task {
   progress: number;
   is_blocked: boolean;
   blocked_reason: string | null;
+  agent_context: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -107,8 +109,8 @@ export async function getTasksByStatus(status: string): Promise<Task[]> {
 
 export async function createTask(task: Partial<Task> & { id: string; title: string }): Promise<Task> {
   const result = await pool.query(
-    `INSERT INTO tasks (id, title, description, status, assignee, priority, due_date, estimated_hours, time_spent, progress, is_blocked, blocked_reason)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+    `INSERT INTO tasks (id, title, description, status, assignee, priority, due_date, estimated_hours, time_spent, progress, is_blocked, blocked_reason, agent_context)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
      RETURNING *`,
     [
       task.id,
@@ -122,7 +124,8 @@ export async function createTask(task: Partial<Task> & { id: string; title: stri
       task.time_spent || 0,
       task.progress || 0,
       task.is_blocked || false,
-      task.blocked_reason || null
+      task.blocked_reason || null,
+      task.agent_context || null
     ]
   );
   return result.rows[0];
