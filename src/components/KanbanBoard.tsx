@@ -19,6 +19,7 @@ import TaskModal from './TaskModal';
 const columns = [
   { id: 'todo', title: 'To Do', icon: '📋', gradient: 'from-slate-500 to-slate-600' },
   { id: 'in_progress', title: 'In Progress', icon: '⚡', gradient: 'from-blue-500 to-indigo-600' },
+  { id: 'in_review', title: 'In Review', icon: '👀', gradient: 'from-amber-500 to-orange-600' },
   { id: 'done', title: 'Done', icon: '✅', gradient: 'from-emerald-500 to-teal-600' },
 ];
 
