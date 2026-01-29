@@ -27,19 +27,12 @@ export async function PATCH(
       return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     }
     
-    // Send webhook for significant updates
-    // - Field changes: title, description, priority, assignee, due_date
-    // - Status changes: only when moved to 'done' (completion is significant)
-    const significantFields = ['title', 'description', 'priority', 'assignee', 'due_date'];
-    const hasSignificantChange = significantFields.some(field => field in body);
+    // Send webhook for ALL task updates so Simon stays in sync
     const isCompleted = body.status === 'done';
-    
-    if (hasSignificantChange || isCompleted) {
-      await sendWebhook({
-        event: isCompleted ? 'task.completed' : 'task.updated',
-        task: task,
-      });
-    }
+    await sendWebhook({
+      event: isCompleted ? 'task.completed' : 'task.updated',
+      task: task,
+    });
     
     return NextResponse.json(task);
   } catch (error) {

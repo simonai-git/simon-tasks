@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getCommentsByTaskId, createComment } from '@/lib/db';
+import { getCommentsByTaskId, createComment, getTask } from '@/lib/db';
+import { sendCommentWebhook } from '@/lib/webhook';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function GET(
@@ -30,6 +31,18 @@ export async function POST(
       author: body.author,
       content: body.content,
     });
+    
+    // Get task for webhook context
+    const task = await getTask(id);
+    if (task) {
+      await sendCommentWebhook({
+        task,
+        comment: {
+          author: comment.author,
+          content: comment.content,
+        },
+      });
+    }
     
     return NextResponse.json(comment, { status: 201 });
   } catch (error) {

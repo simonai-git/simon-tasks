@@ -61,3 +61,46 @@ export async function sendWebhook(payload: WebhookPayload): Promise<void> {
     // Don't throw - webhook failure shouldn't break task creation
   }
 }
+
+export interface CommentWebhookPayload {
+  task: {
+    id: string;
+    title: string;
+    status: string;
+    assignee: string;
+  };
+  comment: {
+    author: string;
+    content: string;
+  };
+}
+
+export async function sendCommentWebhook(payload: CommentWebhookPayload): Promise<void> {
+  try {
+    const { task, comment } = payload;
+    
+    const title = `Comment on: ${task.title}`;
+    const message = [
+      `From: ${comment.author}`,
+      '',
+      comment.content,
+      '',
+      `Task Status: ${task.status}`,
+      `Assignee: ${task.assignee}`,
+    ].join('\n');
+
+    await fetch(NTFY_URL, {
+      method: 'POST',
+      headers: {
+        'Title': title,
+        'Priority': '4',  // High priority for comments (feedback)
+        'Tags': 'speech_balloon',  // 💬
+      },
+      body: message,
+    });
+
+    console.log(`Webhook sent: comment on ${task.title} by ${comment.author}`);
+  } catch (error) {
+    console.error('Comment webhook error:', error);
+  }
+}
