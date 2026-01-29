@@ -65,6 +65,23 @@ async function initDb() {
       )
     `);
     
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS watcher_config (
+        id TEXT PRIMARY KEY DEFAULT 'singleton',
+        is_running BOOLEAN NOT NULL DEFAULT FALSE,
+        last_run TIMESTAMPTZ,
+        current_task_id TEXT,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    
+    // Ensure watcher config row exists
+    await client.query(`
+      INSERT INTO watcher_config (id, is_running) 
+      VALUES ('singleton', FALSE) 
+      ON CONFLICT (id) DO NOTHING
+    `);
+    
     console.log('Database initialized');
   } finally {
     client.release();
@@ -211,6 +228,44 @@ export async function getActivityByTaskId(taskId: string): Promise<ActivityLog[]
     [taskId]
   );
   return result.rows;
+}
+
+// Watcher Config
+export interface WatcherConfig {
+  id: string;
+  is_running: boolean;
+  last_run: string | null;
+  current_task_id: string | null;
+  updated_at: string;
+}
+
+export async function getWatcherConfig(): Promise<WatcherConfig> {
+  const result = await pool.query('SELECT * FROM watcher_config WHERE id = $1', ['singleton']);
+  return result.rows[0];
+}
+
+export async function updateWatcherConfig(updates: Partial<WatcherConfig>): Promise<WatcherConfig> {
+  const fields = Object.keys(updates).filter(k => k !== 'id');
+  if (fields.length === 0) {
+    return getWatcherConfig();
+  }
+  
+  const setClause = fields.map((f, i) => `${f} = $${i + 1}`).join(', ');
+  const values = fields.map(f => updates[f as keyof WatcherConfig]);
+  
+  const result = await pool.query(
+    `UPDATE watcher_config SET ${setClause}, updated_at = NOW() WHERE id = 'singleton' RETURNING *`,
+    values
+  );
+  
+  return result.rows[0];
+}
+
+export async function toggleWatcher(): Promise<WatcherConfig> {
+  const result = await pool.query(
+    `UPDATE watcher_config SET is_running = NOT is_running, updated_at = NOW() WHERE id = 'singleton' RETURNING *`
+  );
+  return result.rows[0];
 }
 
 export default pool;

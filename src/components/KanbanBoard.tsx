@@ -40,6 +40,12 @@ const sortByPriority = (tasks: Task[]): Task[] => {
   });
 };
 
+interface WatcherConfig {
+  is_running: boolean;
+  last_run: string | null;
+  current_task_id: string | null;
+}
+
 export default function KanbanBoard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -48,6 +54,8 @@ export default function KanbanBoard() {
   const [loading, setLoading] = useState(true);
   const [detailTask, setDetailTask] = useState<Task | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [watcherConfig, setWatcherConfig] = useState<WatcherConfig | null>(null);
+  const [togglingWatcher, setTogglingWatcher] = useState(false);
   const { data: session } = useSession();
 
   const sensors = useSensors(
@@ -60,7 +68,38 @@ export default function KanbanBoard() {
 
   useEffect(() => {
     fetchTasks();
+    fetchWatcherConfig();
+    // Poll watcher config every 30 seconds
+    const interval = setInterval(fetchWatcherConfig, 30000);
+    return () => clearInterval(interval);
   }, []);
+
+  const fetchWatcherConfig = async () => {
+    try {
+      const res = await fetch('/api/watcher');
+      const data = await res.json();
+      setWatcherConfig(data);
+    } catch (error) {
+      console.error('Error fetching watcher config:', error);
+    }
+  };
+
+  const toggleWatcher = async () => {
+    setTogglingWatcher(true);
+    try {
+      const res = await fetch('/api/watcher', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'toggle' }),
+      });
+      const data = await res.json();
+      setWatcherConfig(data);
+    } catch (error) {
+      console.error('Error toggling watcher:', error);
+    } finally {
+      setTogglingWatcher(false);
+    }
+  };
 
   const fetchTasks = async () => {
     try {
@@ -207,6 +246,35 @@ export default function KanbanBoard() {
             </p>
           </div>
           <div className="flex items-center gap-4">
+            {/* Watcher Toggle */}
+            <button
+              onClick={toggleWatcher}
+              disabled={togglingWatcher}
+              className={`group flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all ${
+                watcherConfig?.is_running
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30'
+                  : 'bg-white/5 text-white/50 border border-white/10 hover:bg-white/10 hover:text-white/70'
+              }`}
+              title={watcherConfig?.is_running ? 'Watcher is running - click to pause' : 'Watcher is paused - click to start'}
+            >
+              {togglingWatcher ? (
+                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              ) : watcherConfig?.is_running ? (
+                <>
+                  <span className="relative flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                  </span>
+                  <span className="text-sm">Watcher Active</span>
+                </>
+              ) : (
+                <>
+                  <span className="w-3 h-3 rounded-full bg-white/30"></span>
+                  <span className="text-sm">Watcher Paused</span>
+                </>
+              )}
+            </button>
+            
             <button
               onClick={openCreateModal}
               className="group flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-purple-500/25 hover:scale-105 active:scale-95"
