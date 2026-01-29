@@ -51,7 +51,7 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
   const [newComment, setNewComment] = useState('');
   const [loadingComments, setLoadingComments] = useState(false);
   const [submittingComment, setSubmittingComment] = useState(false);
-  const [activeTab, setActiveTab] = useState<'details' | 'activity'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'activity' | 'agent_context'>('details');
 
   useEffect(() => {
     if (task && isOpen) {
@@ -186,6 +186,15 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
             }`}
           >
             Activity ({activities.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('agent_context')}
+            className={`px-6 py-3 text-sm font-medium transition-colors flex items-center gap-1.5 ${
+              activeTab === 'agent_context' ? 'text-white border-b-2 border-purple-500' : 'text-white/50 hover:text-white/70'
+            }`}
+          >
+            <span>🤖</span>
+            <span>Agent Context</span>
           </button>
         </div>
 
@@ -434,7 +443,7 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
                 </div>
               </div>
             </>
-          ) : (
+          ) : activeTab === 'activity' ? (
             /* Activity Tab */
             <div className="space-y-3">
               {activities.length === 0 ? (
@@ -461,6 +470,23 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
                     </div>
                   </div>
                 ))
+              )}
+            </div>
+          ) : (
+            /* Agent Context Tab */
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-white/50 text-sm">
+                <span>🤖</span>
+                <span>AI working context — updated by agents via API</span>
+              </div>
+              {task.agent_context ? (
+                <div className="bg-black/30 border border-purple-500/20 rounded-xl p-4 font-mono text-sm text-white/80 whitespace-pre-wrap overflow-x-auto">
+                  {task.agent_context}
+                </div>
+              ) : (
+                <div className="text-white/40 text-sm text-center py-8 bg-black/20 rounded-xl">
+                  No agent context set for this task
+                </div>
               )}
             </div>
           )}
