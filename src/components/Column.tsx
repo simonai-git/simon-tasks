@@ -14,9 +14,10 @@ interface ColumnProps {
   onEditTask: (task: Task) => void;
   onDeleteTask: (id: string) => void;
   onViewTask: (task: Task) => void;
+  activeTaskId?: string | null;
 }
 
-export default function Column({ id, title, icon, gradient, tasks, onEditTask, onDeleteTask, onViewTask }: ColumnProps) {
+export default function Column({ id, title, icon, gradient, tasks, onEditTask, onDeleteTask, onViewTask, activeTaskId }: ColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id });
 
   return (
@@ -47,6 +48,7 @@ export default function Column({ id, title, icon, gradient, tasks, onEditTask, o
                 onEdit={onEditTask}
                 onDelete={onDeleteTask}
                 onView={onViewTask}
+                isActive={activeTaskId === task.id}
               />
             </div>
           ))}

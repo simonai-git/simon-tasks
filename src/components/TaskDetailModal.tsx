@@ -29,6 +29,7 @@ interface TaskDetailModalProps {
   onClose: () => void;
   onUpdate: (task: Task) => void;
   onDelete: (id: string) => void;
+  isActive?: boolean;
 }
 
 const statusConfig = {
@@ -44,7 +45,7 @@ const priorityConfig = {
   high: { label: 'High', color: 'bg-red-500/20 text-red-400 border-red-500/30' },
 };
 
-export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDelete }: TaskDetailModalProps) {
+export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDelete, isActive = false }: TaskDetailModalProps) {
   const { data: session } = useSession();
   const [comments, setComments] = useState<Comment[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -140,6 +141,21 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-semibold text-white truncate">{task.title}</h2>
+              {isActive && (
+                <span className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs rounded-full">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  ACTIVE
+                </span>
+              )}
+              {!isActive && task.status === 'in_progress' && (
+                <span className="flex items-center gap-1.5 px-2 py-0.5 bg-gray-500/20 text-gray-400 text-xs rounded-full">
+                  <span className="h-2 w-2 rounded-full bg-gray-500"></span>
+                  IDLE
+                </span>
+              )}
               {task.is_blocked && (
                 <span className="px-2 py-0.5 bg-red-500/20 text-red-400 text-xs rounded-full">BLOCKED</span>
               )}

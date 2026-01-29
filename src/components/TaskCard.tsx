@@ -9,6 +9,7 @@ interface TaskCardProps {
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
   onView: (task: Task) => void;
+  isActive?: boolean;
 }
 
 const priorityConfig = {
@@ -22,7 +23,7 @@ const assigneeConfig = {
   Simon: { color: 'from-purple-500 to-pink-500', emoji: '🦊' },
 };
 
-export default function TaskCard({ task, onEdit, onDelete, onView }: TaskCardProps) {
+export default function TaskCard({ task, onEdit, onDelete, onView, isActive = false }: TaskCardProps) {
   const {
     attributes,
     listeners,
@@ -53,6 +54,20 @@ export default function TaskCard({ task, onEdit, onDelete, onView }: TaskCardPro
         isDragging ? 'opacity-50 scale-105 shadow-2xl shadow-purple-500/20 border-purple-500/30' : ''
       } ${task.is_blocked ? 'border-red-500/30' : isOverdue ? 'border-orange-500/30' : 'border-white/[0.06] hover:border-white/[0.12]'}`}
     >
+      {/* Active work indicator */}
+      <div className="absolute top-2 right-2 z-10">
+        {isActive ? (
+          <span className="relative flex h-3 w-3" title="Agent actively working on this task">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+          </span>
+        ) : task.status === 'in_progress' ? (
+          <span className="flex h-3 w-3" title="In progress but not actively being worked on">
+            <span className="rounded-full h-3 w-3 bg-gray-500/50"></span>
+          </span>
+        ) : null}
+      </div>
+
       {/* Blocked/Overdue indicator */}
       {(task.is_blocked || isOverdue) && (
         <div className={`absolute top-0 left-0 right-0 h-1 rounded-t-xl ${task.is_blocked ? 'bg-red-500' : 'bg-orange-500'}`} />

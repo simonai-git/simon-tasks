@@ -337,6 +337,7 @@ export default function KanbanBoard() {
                 onEditTask={openEditModal}
                 onDeleteTask={handleDeleteTask}
                 onViewTask={openDetailModal}
+                activeTaskId={watcherConfig?.current_task_id}
               />
             </div>
           ))}
@@ -356,6 +357,7 @@ export default function KanbanBoard() {
         onClose={() => setIsDetailOpen(false)}
         onUpdate={handleTaskUpdate}
         onDelete={handleDeleteTask}
+        isActive={detailTask?.id === watcherConfig?.current_task_id}
       />
     </div>
   );
