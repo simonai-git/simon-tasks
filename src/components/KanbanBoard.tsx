@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession, signOut } from 'next-auth/react';
 import {
   DndContext,
   DragEndEvent,
@@ -29,6 +30,7 @@ export default function KanbanBoard() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const { data: session } = useSession();
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -176,13 +178,32 @@ export default function KanbanBoard() {
               Drag tasks between columns to update their status
             </p>
           </div>
-          <button
-            onClick={openCreateModal}
-            className="group flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-purple-500/25 hover:scale-105 active:scale-95"
-          >
-            <span className="text-lg group-hover:rotate-90 transition-transform duration-200">+</span>
-            New Task
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={openCreateModal}
+              className="group flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-purple-500/25 hover:scale-105 active:scale-95"
+            >
+              <span className="text-lg group-hover:rotate-90 transition-transform duration-200">+</span>
+              New Task
+            </button>
+            
+            {session?.user && (
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  {session.user.image && (
+                    <img src={session.user.image} alt="" className="w-8 h-8 rounded-full" />
+                  )}
+                  <span className="text-white/60 text-sm hidden sm:inline">{session.user.email}</span>
+                </div>
+                <button
+                  onClick={() => signOut()}
+                  className="text-white/40 hover:text-white/70 text-sm transition-colors"
+                >
+                  Sign out
+                </button>
+              </div>
+            )}
+          </div>
         </div>
         
         {/* Stats */}
