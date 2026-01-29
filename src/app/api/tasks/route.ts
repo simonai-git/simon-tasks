@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllTasks, createTask } from '@/lib/db';
+import { sendWebhook } from '@/lib/webhook';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function GET() {
@@ -24,6 +25,13 @@ export async function POST(request: NextRequest) {
       priority: body.priority || 'medium',
       due_date: body.due_date || null,
     });
+    
+    // Send webhook notification
+    await sendWebhook({
+      event: 'task.created',
+      task: task,
+    });
+    
     return NextResponse.json(task, { status: 201 });
   } catch (error) {
     console.error('Error creating task:', error);

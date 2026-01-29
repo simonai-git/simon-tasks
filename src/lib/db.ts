@@ -35,6 +35,10 @@ export function getAllTasks(): Task[] {
   return db.prepare('SELECT * FROM tasks ORDER BY created_at DESC').all() as Task[];
 }
 
+export function getTask(id: string): Task | null {
+  return db.prepare('SELECT * FROM tasks WHERE id = ?').get(id) as Task | null;
+}
+
 export function getTasksByStatus(status: string): Task[] {
   return db.prepare('SELECT * FROM tasks WHERE status = ? ORDER BY created_at DESC').all(status) as Task[];
 }
