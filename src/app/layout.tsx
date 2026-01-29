@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Simon & Bogdan Tasks",
-  description: "Kanban board for tracking tasks between Simon and Bogdan",
+  title: "Simon Task Tracker",
+  description: "Kanban board for tracking Simon's tasks",
 };
 
 export default function RootLayout({

@@ -169,7 +169,7 @@ export default function KanbanBoard() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold gradient-text mb-1">
-              Simon & Bogdan Tasks
+              Simon Task Tracker
             </h1>
             <p className="text-white/50 text-sm">
               Drag tasks between columns to update their status
