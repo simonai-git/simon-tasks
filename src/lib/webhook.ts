@@ -18,28 +18,30 @@ export async function sendWebhook(payload: WebhookPayload): Promise<void> {
   try {
     const { event, task } = payload;
     
-    // Format message for ntfy
-    const priorityEmoji = task.priority === 'high' ? '🔴' : task.priority === 'medium' ? '🟡' : '🟢';
-    const eventAction = event === 'task.created' ? '📥 New Task' : event === 'task.updated' ? '✏️ Updated' : '🗑️ Deleted';
+    // Format message for ntfy (no emojis in headers - they break HTTP)
+    const eventAction = event === 'task.created' ? 'New Task' : event === 'task.updated' ? 'Updated' : 'Deleted';
     
     const title = `${eventAction}: ${task.title}`;
     const message = [
       task.description || 'No description',
       '',
-      `${priorityEmoji} Priority: ${task.priority}`,
-      `👤 Assignee: ${task.assignee}`,
-      task.due_date ? `📅 Due: ${task.due_date}` : '',
+      `Priority: ${task.priority.toUpperCase()}`,
+      `Assignee: ${task.assignee}`,
+      task.due_date ? `Due: ${task.due_date}` : '',
     ].filter(Boolean).join('\n');
 
     // Map priority to ntfy priority (1-5)
     const ntfyPriority = task.priority === 'high' ? '5' : task.priority === 'medium' ? '3' : '2';
+    
+    // Tags for ntfy (emojis work here)
+    const tags = task.priority === 'high' ? 'rotating_light' : task.priority === 'medium' ? 'warning' : 'white_check_mark';
 
     await fetch(NTFY_URL, {
       method: 'POST',
       headers: {
         'Title': title,
         'Priority': ntfyPriority,
-        'Tags': `task,${task.priority},${task.assignee.toLowerCase()}`,
+        'Tags': tags,
       },
       body: message,
     });
