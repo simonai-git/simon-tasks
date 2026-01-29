@@ -10,15 +10,15 @@ interface TaskCardProps {
   onDelete: (id: string) => void;
 }
 
-const priorityColors = {
-  low: 'bg-gray-100 text-gray-600',
-  medium: 'bg-yellow-100 text-yellow-700',
-  high: 'bg-red-100 text-red-700',
+const priorityConfig = {
+  low: { color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30', dot: 'bg-emerald-400' },
+  medium: { color: 'bg-amber-500/20 text-amber-400 border-amber-500/30', dot: 'bg-amber-400' },
+  high: { color: 'bg-red-500/20 text-red-400 border-red-500/30', dot: 'bg-red-400' },
 };
 
-const assigneeColors = {
-  Bogdan: 'bg-blue-500',
-  Simon: 'bg-purple-500',
+const assigneeConfig = {
+  Bogdan: { color: 'from-blue-500 to-cyan-500', emoji: '👤' },
+  Simon: { color: 'from-purple-500 to-pink-500', emoji: '🦊' },
 };
 
 export default function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
@@ -34,8 +34,10 @@ export default function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
   };
+
+  const priority = priorityConfig[task.priority];
+  const assignee = assigneeConfig[task.assignee];
 
   return (
     <div
@@ -43,53 +45,67 @@ export default function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
       style={style}
       {...attributes}
       {...listeners}
-      className={`bg-white rounded-lg shadow-sm border border-gray-200 p-4 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow ${
-        isDragging ? 'shadow-lg' : ''
+      className={`group relative bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] hover:border-white/[0.12] rounded-xl p-4 cursor-grab active:cursor-grabbing transition-all duration-200 ${
+        isDragging ? 'opacity-50 scale-105 shadow-2xl shadow-purple-500/20 border-purple-500/30' : ''
       }`}
     >
-      <div className="flex items-start justify-between mb-2">
-        <h3 className="font-medium text-gray-900 flex-1">{task.title}</h3>
-        <div className="flex gap-1 ml-2">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit(task);
-            }}
-            className="text-gray-400 hover:text-blue-500 p-1"
-          >
-            ✏️
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(task.id);
-            }}
-            className="text-gray-400 hover:text-red-500 p-1"
-          >
-            🗑️
-          </button>
-        </div>
+      {/* Action buttons - appear on hover */}
+      <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit(task);
+          }}
+          className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/40 hover:text-blue-400 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(task.id);
+          }}
+          className="p-1.5 rounded-lg bg-white/5 hover:bg-red-500/20 text-white/40 hover:text-red-400 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        </button>
       </div>
+
+      {/* Title */}
+      <h3 className="font-medium text-white pr-16 mb-2">{task.title}</h3>
       
+      {/* Description */}
       {task.description && (
-        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{task.description}</p>
+        <p className="text-sm text-white/50 mb-3 line-clamp-2">{task.description}</p>
       )}
       
+      {/* Footer */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className={`text-xs px-2 py-1 rounded-full ${priorityColors[task.priority]}`}>
+          {/* Priority badge */}
+          <span className={`inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full border ${priority.color}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${priority.dot}`} />
             {task.priority}
           </span>
+          
+          {/* Due date */}
           {task.due_date && (
-            <span className="text-xs text-gray-500">
-              📅 {new Date(task.due_date).toLocaleDateString()}
+            <span className="text-xs text-white/40 flex items-center gap-1">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              {new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             </span>
           )}
         </div>
-        <div className="flex items-center gap-1">
-          <div className={`w-6 h-6 rounded-full ${assigneeColors[task.assignee]} flex items-center justify-center text-white text-xs font-medium`}>
-            {task.assignee[0]}
-          </div>
+        
+        {/* Assignee */}
+        <div className={`w-7 h-7 rounded-full bg-gradient-to-br ${assignee.color} flex items-center justify-center text-sm shadow-lg`}>
+          {assignee.emoji}
         </div>
       </div>
     </div>

@@ -17,9 +17,9 @@ import Column from './Column';
 import TaskModal from './TaskModal';
 
 const columns = [
-  { id: 'todo', title: 'To Do', color: 'bg-gray-500' },
-  { id: 'in_progress', title: 'In Progress', color: 'bg-blue-500' },
-  { id: 'done', title: 'Done', color: 'bg-green-500' },
+  { id: 'todo', title: 'To Do', icon: '📋', gradient: 'from-slate-500 to-slate-600' },
+  { id: 'in_progress', title: 'In Progress', icon: '⚡', gradient: 'from-blue-500 to-indigo-600' },
+  { id: 'done', title: 'Done', icon: '✅', gradient: 'from-emerald-500 to-teal-600' },
 ];
 
 export default function KanbanBoard() {
@@ -66,7 +66,6 @@ export default function KanbanBoard() {
 
     const overId = over.id as string;
     
-    // Check if dropping over a column
     const overColumn = columns.find(c => c.id === overId);
     if (overColumn && activeTask.status !== overId) {
       setTasks(prev => prev.map(t => 
@@ -74,7 +73,6 @@ export default function KanbanBoard() {
       ));
     }
     
-    // Check if dropping over another task
     const overTask = tasks.find(t => t.id === overId);
     if (overTask && activeTask.status !== overTask.status) {
       setTasks(prev => prev.map(t => 
@@ -92,7 +90,6 @@ export default function KanbanBoard() {
     const activeTask = tasks.find(t => t.id === active.id);
     if (!activeTask) return;
 
-    // Update status on the server
     try {
       await fetch(`/api/tasks/${activeTask.id}`, {
         method: 'PATCH',
@@ -101,7 +98,7 @@ export default function KanbanBoard() {
       });
     } catch (error) {
       console.error('Error updating task:', error);
-      fetchTasks(); // Revert on error
+      fetchTasks();
     }
   };
 
@@ -156,27 +153,53 @@ export default function KanbanBoard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="flex items-center justify-center h-screen">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+          <span className="text-white/60">Loading tasks...</span>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Simon & Bogdan Tasks</h1>
-          <p className="text-gray-500 mt-1">Drag tasks between columns to update status</p>
+    <div className="p-6 lg:p-8 max-w-[1600px] mx-auto">
+      {/* Header */}
+      <div className="glass rounded-2xl p-6 mb-8 animate-fade-in">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold gradient-text mb-1">
+              Simon & Bogdan Tasks
+            </h1>
+            <p className="text-white/50 text-sm">
+              Drag tasks between columns to update their status
+            </p>
+          </div>
+          <button
+            onClick={openCreateModal}
+            className="group flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-purple-500/25 hover:scale-105 active:scale-95"
+          >
+            <span className="text-lg group-hover:rotate-90 transition-transform duration-200">+</span>
+            New Task
+          </button>
         </div>
-        <button
-          onClick={openCreateModal}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-        >
-          <span>+</span> New Task
-        </button>
+        
+        {/* Stats */}
+        <div className="flex gap-6 mt-6 pt-6 border-t border-white/10">
+          {columns.map((col) => {
+            const count = tasks.filter(t => t.status === col.id).length;
+            return (
+              <div key={col.id} className="flex items-center gap-2">
+                <span className="text-lg">{col.icon}</span>
+                <span className="text-white/70 text-sm">{col.title}:</span>
+                <span className="text-white font-semibold">{count}</span>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
+      {/* Board */}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
@@ -185,16 +208,18 @@ export default function KanbanBoard() {
         onDragEnd={handleDragEnd}
       >
         <div className="flex gap-6 overflow-x-auto pb-4">
-          {columns.map((column) => (
-            <Column
-              key={column.id}
-              id={column.id}
-              title={column.title}
-              color={column.color}
-              tasks={tasks.filter(t => t.status === column.id)}
-              onEditTask={openEditModal}
-              onDeleteTask={handleDeleteTask}
-            />
+          {columns.map((column, index) => (
+            <div key={column.id} className="animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
+              <Column
+                id={column.id}
+                title={column.title}
+                icon={column.icon}
+                gradient={column.gradient}
+                tasks={tasks.filter(t => t.status === column.id)}
+                onEditTask={openEditModal}
+                onDeleteTask={handleDeleteTask}
+              />
+            </div>
           ))}
         </div>
       </DndContext>
