@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getTask, updateTask, deleteTask } from '@/lib/db';
 import { sendWebhook } from '@/lib/webhook';
 
+const API_KEY = process.env.SIMON_API_KEY;
+
+function isAuthorized(request: NextRequest): boolean {
+  const authHeader = request.headers.get('x-api-key');
+  return authHeader === API_KEY && !!API_KEY;
+}
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
