@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 export async function GET() {
   try {
-    const tasks = getAllTasks();
+    const tasks = await getAllTasks();
     return NextResponse.json(tasks);
   } catch (error) {
     console.error('Error fetching tasks:', error);
@@ -16,7 +16,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const task = createTask({
+    const task = await createTask({
       id: uuidv4(),
       title: body.title,
       description: body.description || null,

@@ -9,7 +9,7 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
-    const task = updateTask(id, body);
+    const task = await updateTask(id, body);
     if (!task) {
       return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     }
@@ -40,9 +40,9 @@ export async function DELETE(
     const { id } = await params;
     
     // Get task before deleting for webhook
-    const task = getTask(id);
+    const task = await getTask(id);
     
-    const success = deleteTask(id);
+    const success = await deleteTask(id);
     if (!success) {
       return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     }

@@ -1,23 +1,35 @@
-import Database from 'better-sqlite3';
-import path from 'path';
+import { Pool } from 'pg';
 
-const dbPath = path.join(process.cwd(), 'tasks.db');
-const db = new Database(dbPath);
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+});
 
 // Initialize database
-db.exec(`
-  CREATE TABLE IF NOT EXISTS tasks (
-    id TEXT PRIMARY KEY,
-    title TEXT NOT NULL,
-    description TEXT,
-    status TEXT NOT NULL DEFAULT 'todo',
-    assignee TEXT NOT NULL DEFAULT 'Simon',
-    priority TEXT DEFAULT 'medium',
-    due_date TEXT,
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
-  )
-`);
+async function initDb() {
+  const client = await pool.connect();
+  try {
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS tasks (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        description TEXT,
+        status TEXT NOT NULL DEFAULT 'todo',
+        assignee TEXT NOT NULL DEFAULT 'Simon',
+        priority TEXT DEFAULT 'medium',
+        due_date TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    console.log('Database initialized');
+  } finally {
+    client.release();
+  }
+}
+
+// Initialize on module load
+initDb().catch(console.error);
 
 export interface Task {
   id: string;
@@ -31,45 +43,49 @@ export interface Task {
   updated_at: string;
 }
 
-export function getAllTasks(): Task[] {
-  return db.prepare('SELECT * FROM tasks ORDER BY created_at DESC').all() as Task[];
+export async function getAllTasks(): Promise<Task[]> {
+  const result = await pool.query('SELECT * FROM tasks ORDER BY created_at DESC');
+  return result.rows;
 }
 
-export function getTask(id: string): Task | null {
-  return db.prepare('SELECT * FROM tasks WHERE id = ?').get(id) as Task | null;
+export async function getTask(id: string): Promise<Task | null> {
+  const result = await pool.query('SELECT * FROM tasks WHERE id = $1', [id]);
+  return result.rows[0] || null;
 }
 
-export function getTasksByStatus(status: string): Task[] {
-  return db.prepare('SELECT * FROM tasks WHERE status = ? ORDER BY created_at DESC').all(status) as Task[];
+export async function getTasksByStatus(status: string): Promise<Task[]> {
+  const result = await pool.query('SELECT * FROM tasks WHERE status = $1 ORDER BY created_at DESC', [status]);
+  return result.rows;
 }
 
-export function createTask(task: Omit<Task, 'created_at' | 'updated_at'>): Task {
-  const now = new Date().toISOString();
-  const stmt = db.prepare(`
-    INSERT INTO tasks (id, title, description, status, assignee, priority, due_date, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  stmt.run(task.id, task.title, task.description, task.status, task.assignee, task.priority, task.due_date, now, now);
-  return { ...task, created_at: now, updated_at: now };
+export async function createTask(task: Omit<Task, 'created_at' | 'updated_at'>): Promise<Task> {
+  const result = await pool.query(
+    `INSERT INTO tasks (id, title, description, status, assignee, priority, due_date)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     RETURNING *`,
+    [task.id, task.title, task.description, task.status, task.assignee, task.priority, task.due_date]
+  );
+  return result.rows[0];
 }
 
-export function updateTask(id: string, updates: Partial<Task>): Task | null {
-  const now = new Date().toISOString();
+export async function updateTask(id: string, updates: Partial<Task>): Promise<Task | null> {
   const fields = Object.keys(updates).filter(k => k !== 'id' && k !== 'created_at');
   if (fields.length === 0) return null;
   
-  const setClause = fields.map(f => `${f} = ?`).join(', ');
+  const setClause = fields.map((f, i) => `${f} = $${i + 1}`).join(', ');
   const values = fields.map(f => updates[f as keyof Task]);
   
-  const stmt = db.prepare(`UPDATE tasks SET ${setClause}, updated_at = ? WHERE id = ?`);
-  stmt.run(...values, now, id);
+  const result = await pool.query(
+    `UPDATE tasks SET ${setClause}, updated_at = NOW() WHERE id = $${fields.length + 1} RETURNING *`,
+    [...values, id]
+  );
   
-  return db.prepare('SELECT * FROM tasks WHERE id = ?').get(id) as Task;
+  return result.rows[0] || null;
 }
 
-export function deleteTask(id: string): boolean {
-  const result = db.prepare('DELETE FROM tasks WHERE id = ?').run(id);
-  return result.changes > 0;
+export async function deleteTask(id: string): Promise<boolean> {
+  const result = await pool.query('DELETE FROM tasks WHERE id = $1', [id]);
+  return (result.rowCount ?? 0) > 0;
 }
 
-export default db;
+export default pool;
