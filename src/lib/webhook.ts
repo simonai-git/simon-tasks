@@ -2,7 +2,7 @@ const NTFY_TOPIC = process.env.NTFY_TOPIC || 'simon-tasks-notify';
 const NTFY_URL = `https://ntfy.sh/${NTFY_TOPIC}`;
 
 export interface WebhookPayload {
-  event: 'task.created' | 'task.updated' | 'task.deleted';
+  event: 'task.created' | 'task.updated' | 'task.deleted' | 'task.completed';
   task: {
     id: string;
     title: string;
@@ -19,7 +19,13 @@ export async function sendWebhook(payload: WebhookPayload): Promise<void> {
     const { event, task } = payload;
     
     // Format message for ntfy (no emojis in headers - they break HTTP)
-    const eventAction = event === 'task.created' ? 'New Task' : event === 'task.updated' ? 'Updated' : 'Deleted';
+    const eventActions: Record<string, string> = {
+      'task.created': 'New Task',
+      'task.updated': 'Updated',
+      'task.deleted': 'Deleted',
+      'task.completed': 'Completed',
+    };
+    const eventAction = eventActions[event] || 'Updated';
     
     const title = `${eventAction}: ${task.title}`;
     const message = [
@@ -34,7 +40,10 @@ export async function sendWebhook(payload: WebhookPayload): Promise<void> {
     const ntfyPriority = task.priority === 'high' ? '5' : task.priority === 'medium' ? '3' : '2';
     
     // Tags for ntfy (emojis work here)
-    const tags = task.priority === 'high' ? 'rotating_light' : task.priority === 'medium' ? 'warning' : 'white_check_mark';
+    let tags = task.priority === 'high' ? 'rotating_light' : task.priority === 'medium' ? 'warning' : 'white_check_mark';
+    if (event === 'task.completed') {
+      tags = 'tada';  // 🎉 for completed tasks
+    }
 
     await fetch(NTFY_URL, {
       method: 'POST',
