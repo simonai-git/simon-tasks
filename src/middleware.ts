@@ -5,8 +5,8 @@ import { getToken } from 'next-auth/jwt';
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  // Allow API key authentication for /api/tasks routes
-  if (pathname.startsWith('/api/tasks')) {
+  // Allow API key authentication for /api/tasks and /api/watcher routes
+  if (pathname.startsWith('/api/tasks') || pathname.startsWith('/api/watcher')) {
     const apiKey = request.headers.get('x-api-key');
     const validApiKey = process.env.SIMON_API_KEY;
     
