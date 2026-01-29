@@ -51,7 +51,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
   return (
     <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div 
-        className="glass rounded-2xl shadow-2xl shadow-black/50 w-full max-w-md animate-slide-up"
+        className="bg-[#1e1e2f]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-black/50 w-full max-w-md animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -81,7 +81,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
-              className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 focus:border-blue-500/50 focus:bg-white/[0.07] focus:ring-2 focus:ring-blue-500/20"
+              className="w-full px-4 py-2.5 bg-black/30 border border-white/10 rounded-xl text-white placeholder-white/40 focus:border-blue-500/50 focus:bg-black/40 focus:ring-2 focus:ring-blue-500/20"
               placeholder="What needs to be done?"
             />
           </div>
@@ -95,7 +95,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 focus:border-blue-500/50 focus:bg-white/[0.07] focus:ring-2 focus:ring-blue-500/20 resize-none"
+              className="w-full px-4 py-2.5 bg-black/30 border border-white/10 rounded-xl text-white placeholder-white/40 focus:border-blue-500/50 focus:bg-black/40 focus:ring-2 focus:ring-blue-500/20 resize-none"
               placeholder="Add more details..."
             />
           </div>
@@ -170,7 +170,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
-              className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:border-blue-500/50 focus:bg-white/[0.07] focus:ring-2 focus:ring-blue-500/20 [color-scheme:dark]"
+              className="w-full px-4 py-2.5 bg-black/30 border border-white/10 rounded-xl text-white focus:border-blue-500/50 focus:bg-black/40 focus:ring-2 focus:ring-blue-500/20 [color-scheme:dark]"
             />
           </div>
           
