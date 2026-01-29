@@ -202,28 +202,6 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {activeTab === 'details' ? (
             <>
-              {/* Progress Bar */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium text-white/70">Progress</label>
-                  <span className="text-sm text-white/50">{task.progress || 0}%</span>
-                </div>
-                <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300"
-                    style={{ width: `${task.progress || 0}%` }}
-                  />
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={task.progress || 0}
-                  onChange={(e) => handleFieldUpdate('progress', parseInt(e.target.value))}
-                  className="w-full mt-2 accent-blue-500"
-                />
-              </div>
-
               {/* Time Tracking */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
