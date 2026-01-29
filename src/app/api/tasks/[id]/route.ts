@@ -16,6 +16,12 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
+    
+    // Auto-assign to Bogdan when moving to in_review
+    if (body.status === 'in_review') {
+      body.assignee = 'Bogdan';
+    }
+    
     const task = await updateTask(id, body);
     if (!task) {
       return NextResponse.json({ error: 'Task not found' }, { status: 404 });
