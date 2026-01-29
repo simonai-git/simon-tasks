@@ -16,6 +16,7 @@ import { arrayMove } from '@dnd-kit/sortable';
 import { Task } from '@/lib/db';
 import Column from './Column';
 import TaskModal from './TaskModal';
+import TaskDetailModal from './TaskDetailModal';
 
 const columns = [
   { id: 'todo', title: 'To Do', icon: '📋', gradient: 'from-slate-500 to-slate-600' },
@@ -30,6 +31,8 @@ export default function KanbanBoard() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [detailTask, setDetailTask] = useState<Task | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
   const { data: session } = useSession();
 
   const sensors = useSensors(
@@ -154,6 +157,16 @@ export default function KanbanBoard() {
     setIsModalOpen(true);
   };
 
+  const openDetailModal = (task: Task) => {
+    setDetailTask(task);
+    setIsDetailOpen(true);
+  };
+
+  const handleTaskUpdate = (updatedTask: Task) => {
+    setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
+    setDetailTask(updatedTask);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -240,6 +253,7 @@ export default function KanbanBoard() {
                 tasks={tasks.filter(t => t.status === column.id)}
                 onEditTask={openEditModal}
                 onDeleteTask={handleDeleteTask}
+                onViewTask={openDetailModal}
               />
             </div>
           ))}
@@ -251,6 +265,14 @@ export default function KanbanBoard() {
         onClose={() => setIsModalOpen(false)}
         onSave={editingTask ? handleEditTask : handleCreateTask}
         task={editingTask}
+      />
+
+      <TaskDetailModal
+        task={detailTask}
+        isOpen={isDetailOpen}
+        onClose={() => setIsDetailOpen(false)}
+        onUpdate={handleTaskUpdate}
+        onDelete={handleDeleteTask}
       />
     </div>
   );

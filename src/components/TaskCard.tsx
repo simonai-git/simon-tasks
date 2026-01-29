@@ -8,6 +8,7 @@ interface TaskCardProps {
   task: Task;
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
+  onView: (task: Task) => void;
 }
 
 const priorityConfig = {
@@ -21,7 +22,7 @@ const assigneeConfig = {
   Simon: { color: 'from-purple-500 to-pink-500', emoji: '🦊' },
 };
 
-export default function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
+export default function TaskCard({ task, onEdit, onDelete, onView }: TaskCardProps) {
   const {
     attributes,
     listeners,
@@ -45,7 +46,8 @@ export default function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
       style={style}
       {...attributes}
       {...listeners}
-      className={`group relative bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] hover:border-white/[0.12] rounded-xl p-4 cursor-grab active:cursor-grabbing transition-all duration-200 ${
+      onClick={() => !isDragging && onView(task)}
+      className={`group relative bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] hover:border-white/[0.12] rounded-xl p-4 cursor-pointer active:cursor-grabbing transition-all duration-200 ${
         isDragging ? 'opacity-50 scale-105 shadow-2xl shadow-purple-500/20 border-purple-500/30' : ''
       }`}
     >

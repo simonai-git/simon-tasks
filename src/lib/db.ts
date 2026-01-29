@@ -22,6 +22,17 @@ async function initDb() {
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
+    
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS comments (
+        id TEXT PRIMARY KEY,
+        task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+        author TEXT NOT NULL,
+        content TEXT NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    
     console.log('Database initialized');
   } finally {
     client.release();
@@ -85,6 +96,38 @@ export async function updateTask(id: string, updates: Partial<Task>): Promise<Ta
 
 export async function deleteTask(id: string): Promise<boolean> {
   const result = await pool.query('DELETE FROM tasks WHERE id = $1', [id]);
+  return (result.rowCount ?? 0) > 0;
+}
+
+// Comments
+export interface Comment {
+  id: string;
+  task_id: string;
+  author: string;
+  content: string;
+  created_at: string;
+}
+
+export async function getCommentsByTaskId(taskId: string): Promise<Comment[]> {
+  const result = await pool.query(
+    'SELECT * FROM comments WHERE task_id = $1 ORDER BY created_at ASC',
+    [taskId]
+  );
+  return result.rows;
+}
+
+export async function createComment(comment: Omit<Comment, 'created_at'>): Promise<Comment> {
+  const result = await pool.query(
+    `INSERT INTO comments (id, task_id, author, content)
+     VALUES ($1, $2, $3, $4)
+     RETURNING *`,
+    [comment.id, comment.task_id, comment.author, comment.content]
+  );
+  return result.rows[0];
+}
+
+export async function deleteComment(id: string): Promise<boolean> {
+  const result = await pool.query('DELETE FROM comments WHERE id = $1', [id]);
   return (result.rowCount ?? 0) > 0;
 }
 
