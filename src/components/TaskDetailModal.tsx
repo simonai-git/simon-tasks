@@ -12,6 +12,17 @@ interface Comment {
   created_at: string;
 }
 
+interface Activity {
+  id: string;
+  task_id: string;
+  action: string;
+  field_changed: string | null;
+  old_value: string | null;
+  new_value: string | null;
+  actor: string;
+  created_at: string;
+}
+
 interface TaskDetailModalProps {
   task: Task | null;
   isOpen: boolean;
@@ -36,13 +47,16 @@ const priorityConfig = {
 export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDelete }: TaskDetailModalProps) {
   const { data: session } = useSession();
   const [comments, setComments] = useState<Comment[]>([]);
+  const [activities, setActivities] = useState<Activity[]>([]);
   const [newComment, setNewComment] = useState('');
   const [loadingComments, setLoadingComments] = useState(false);
   const [submittingComment, setSubmittingComment] = useState(false);
+  const [activeTab, setActiveTab] = useState<'details' | 'activity'>('details');
 
   useEffect(() => {
     if (task && isOpen) {
       fetchComments();
+      fetchActivity();
     }
   }, [task, isOpen]);
 
@@ -57,6 +71,17 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
       console.error('Error fetching comments:', error);
     } finally {
       setLoadingComments(false);
+    }
+  };
+
+  const fetchActivity = async () => {
+    if (!task) return;
+    try {
+      const res = await fetch(`/api/tasks/${task.id}/activity`);
+      const data = await res.json();
+      setActivities(data);
+    } catch (error) {
+      console.error('Error fetching activity:', error);
     }
   };
 
@@ -82,33 +107,19 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
     }
   };
 
-  const handleStatusChange = async (newStatus: Task['status']) => {
+  const handleFieldUpdate = async (field: string, value: any) => {
     if (!task) return;
     try {
       const res = await fetch(`/api/tasks/${task.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ [field]: value }),
       });
       const updatedTask = await res.json();
       onUpdate(updatedTask);
+      fetchActivity(); // Refresh activity log
     } catch (error) {
-      console.error('Error updating status:', error);
-    }
-  };
-
-  const handleAssigneeChange = async (newAssignee: Task['assignee']) => {
-    if (!task) return;
-    try {
-      const res = await fetch(`/api/tasks/${task.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assignee: newAssignee }),
-      });
-      const updatedTask = await res.json();
-      onUpdate(updatedTask);
-    } catch (error) {
-      console.error('Error updating assignee:', error);
+      console.error(`Error updating ${field}:`, error);
     }
   };
 
@@ -116,6 +127,7 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
 
   const status = statusConfig[task.status];
   const priority = priorityConfig[task.priority];
+  const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== 'done';
 
   return (
     <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4" onClick={onClose}>
@@ -126,8 +138,13 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
         {/* Header */}
         <div className="px-6 py-4 border-b border-white/10 flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <h2 className="text-xl font-semibold text-white truncate">{task.title}</h2>
-            <div className="flex items-center gap-3 mt-2">
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-semibold text-white truncate">{task.title}</h2>
+              {task.is_blocked && (
+                <span className="px-2 py-0.5 bg-red-500/20 text-red-400 text-xs rounded-full">BLOCKED</span>
+              )}
+            </div>
+            <div className="flex items-center gap-3 mt-2 flex-wrap">
               <span className={`inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-full border ${priority.color}`}>
                 {priority.label}
               </span>
@@ -135,8 +152,9 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
                 Assigned to {task.assignee}
               </span>
               {task.due_date && (
-                <span className="text-white/40 text-sm flex items-center gap-1">
+                <span className={`text-sm flex items-center gap-1 ${isOverdue ? 'text-red-400' : 'text-white/40'}`}>
                   📅 {new Date(task.due_date).toLocaleDateString()}
+                  {isOverdue && ' (OVERDUE)'}
                 </span>
               )}
             </div>
@@ -151,128 +169,253 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
           </button>
         </div>
 
+        {/* Tabs */}
+        <div className="flex border-b border-white/10">
+          <button
+            onClick={() => setActiveTab('details')}
+            className={`px-6 py-3 text-sm font-medium transition-colors ${
+              activeTab === 'details' ? 'text-white border-b-2 border-blue-500' : 'text-white/50 hover:text-white/70'
+            }`}
+          >
+            Details
+          </button>
+          <button
+            onClick={() => setActiveTab('activity')}
+            className={`px-6 py-3 text-sm font-medium transition-colors ${
+              activeTab === 'activity' ? 'text-white border-b-2 border-blue-500' : 'text-white/50 hover:text-white/70'
+            }`}
+          >
+            Activity ({activities.length})
+          </button>
+        </div>
+
         {/* Content - Scrollable */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Status */}
-          <div>
-            <label className="block text-sm font-medium text-white/70 mb-3">Status</label>
-            <div className="flex flex-wrap gap-2">
-              {(Object.keys(statusConfig) as Task['status'][]).map((s) => {
-                const config = statusConfig[s];
-                const isActive = task.status === s;
-                return (
+          {activeTab === 'details' ? (
+            <>
+              {/* Progress Bar */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-medium text-white/70">Progress</label>
+                  <span className="text-sm text-white/50">{task.progress || 0}%</span>
+                </div>
+                <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300"
+                    style={{ width: `${task.progress || 0}%` }}
+                  />
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={task.progress || 0}
+                  onChange={(e) => handleFieldUpdate('progress', parseInt(e.target.value))}
+                  className="w-full mt-2 accent-blue-500"
+                />
+              </div>
+
+              {/* Time Tracking */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-white/70 mb-2">Estimated Hours</label>
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    value={task.estimated_hours || ''}
+                    onChange={(e) => handleFieldUpdate('estimated_hours', e.target.value ? parseFloat(e.target.value) : null)}
+                    placeholder="e.g., 2.5"
+                    className="w-full px-4 py-2.5 bg-black/30 border border-white/10 rounded-xl text-white placeholder-white/40 focus:border-blue-500/50"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-white/70 mb-2">Time Spent (hours)</label>
+                  <input
+                    type="number"
+                    step="0.25"
+                    min="0"
+                    value={task.time_spent || ''}
+                    onChange={(e) => handleFieldUpdate('time_spent', e.target.value ? parseFloat(e.target.value) : 0)}
+                    placeholder="0"
+                    className="w-full px-4 py-2.5 bg-black/30 border border-white/10 rounded-xl text-white placeholder-white/40 focus:border-blue-500/50"
+                  />
+                </div>
+              </div>
+
+              {/* Blocked Status */}
+              <div>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={task.is_blocked || false}
+                    onChange={(e) => handleFieldUpdate('is_blocked', e.target.checked)}
+                    className="w-5 h-5 rounded border-white/20 bg-black/30 text-red-500 focus:ring-red-500"
+                  />
+                  <span className="text-sm font-medium text-white/70">Task is blocked</span>
+                </label>
+                {task.is_blocked && (
+                  <textarea
+                    value={task.blocked_reason || ''}
+                    onChange={(e) => handleFieldUpdate('blocked_reason', e.target.value)}
+                    placeholder="Describe what's blocking this task..."
+                    rows={2}
+                    className="w-full mt-2 px-4 py-2.5 bg-red-500/10 border border-red-500/30 rounded-xl text-white placeholder-white/40 focus:border-red-500/50 resize-none"
+                  />
+                )}
+              </div>
+
+              {/* Status */}
+              <div>
+                <label className="block text-sm font-medium text-white/70 mb-3">Status</label>
+                <div className="flex flex-wrap gap-2">
+                  {(Object.keys(statusConfig) as Task['status'][]).map((s) => {
+                    const config = statusConfig[s];
+                    const isActive = task.status === s;
+                    return (
+                      <button
+                        key={s}
+                        onClick={() => handleFieldUpdate('status', s)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${
+                          isActive
+                            ? `${config.color} border-transparent text-white`
+                            : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'
+                        }`}
+                      >
+                        <span>{config.icon}</span>
+                        <span className="text-sm font-medium">{config.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Assignee */}
+              <div>
+                <label className="block text-sm font-medium text-white/70 mb-3">Assignee</label>
+                <div className="flex gap-2">
+                  {(['Simon', 'Bogdan'] as Task['assignee'][]).map((a) => {
+                    const isActive = task.assignee === a;
+                    const config = a === 'Simon' 
+                      ? { emoji: '🦊', color: 'bg-purple-500/20 border-purple-500/50 text-purple-300' }
+                      : { emoji: '👤', color: 'bg-blue-500/20 border-blue-500/50 text-blue-300' };
+                    return (
+                      <button
+                        key={a}
+                        onClick={() => handleFieldUpdate('assignee', a)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${
+                          isActive
+                            ? config.color
+                            : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'
+                        }`}
+                      >
+                        <span>{config.emoji}</span>
+                        <span className="text-sm font-medium">{a}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-medium text-white/70 mb-2">Description</label>
+                <div className="bg-black/20 rounded-xl p-4 text-white/80 text-sm whitespace-pre-wrap">
+                  {task.description || 'No description provided.'}
+                </div>
+              </div>
+
+              {/* Metadata */}
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="bg-black/20 rounded-xl p-3">
+                  <span className="text-white/50">Created</span>
+                  <p className="text-white/80 mt-1">
+                    {new Date(task.created_at).toLocaleString()}
+                  </p>
+                </div>
+                <div className="bg-black/20 rounded-xl p-3">
+                  <span className="text-white/50">Last Updated</span>
+                  <p className="text-white/80 mt-1">
+                    {new Date(task.updated_at).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+
+              {/* Comments Section */}
+              <div>
+                <label className="block text-sm font-medium text-white/70 mb-3">
+                  Comments ({comments.length})
+                </label>
+                
+                <div className="space-y-3 mb-4 max-h-48 overflow-y-auto">
+                  {loadingComments ? (
+                    <div className="text-white/40 text-sm text-center py-4">Loading comments...</div>
+                  ) : comments.length === 0 ? (
+                    <div className="text-white/40 text-sm text-center py-4">No comments yet</div>
+                  ) : (
+                    comments.map((comment) => (
+                      <div key={comment.id} className="bg-black/20 rounded-xl p-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-white/80 text-sm font-medium">{comment.author}</span>
+                          <span className="text-white/40 text-xs">
+                            {new Date(comment.created_at).toLocaleString()}
+                          </span>
+                        </div>
+                        <p className="text-white/70 text-sm whitespace-pre-wrap">{comment.content}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Add Comment */}
+                <div className="flex gap-2">
+                  <textarea
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder="Add a comment or instruction..."
+                    rows={2}
+                    className="flex-1 px-4 py-2.5 bg-black/30 border border-white/10 rounded-xl text-white placeholder-white/40 focus:border-blue-500/50 focus:bg-black/40 focus:ring-2 focus:ring-blue-500/20 resize-none text-sm"
+                  />
                   <button
-                    key={s}
-                    onClick={() => handleStatusChange(s)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${
-                      isActive
-                        ? `${config.color} border-transparent text-white`
-                        : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'
-                    }`}
+                    onClick={handleAddComment}
+                    disabled={!newComment.trim() || submittingComment}
+                    className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-purple-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all self-end"
                   >
-                    <span>{config.icon}</span>
-                    <span className="text-sm font-medium">{config.label}</span>
+                    {submittingComment ? '...' : 'Send'}
                   </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Assignee */}
-          <div>
-            <label className="block text-sm font-medium text-white/70 mb-3">Assignee</label>
-            <div className="flex gap-2">
-              {(['Simon', 'Bogdan'] as Task['assignee'][]).map((a) => {
-                const isActive = task.assignee === a;
-                const config = a === 'Simon' 
-                  ? { emoji: '🦊', color: 'bg-purple-500/20 border-purple-500/50 text-purple-300' }
-                  : { emoji: '👤', color: 'bg-blue-500/20 border-blue-500/50 text-blue-300' };
-                return (
-                  <button
-                    key={a}
-                    onClick={() => handleAssigneeChange(a)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-all ${
-                      isActive
-                        ? config.color
-                        : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'
-                    }`}
-                  >
-                    <span>{config.emoji}</span>
-                    <span className="text-sm font-medium">{a}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="block text-sm font-medium text-white/70 mb-2">Description</label>
-            <div className="bg-black/20 rounded-xl p-4 text-white/80 text-sm whitespace-pre-wrap">
-              {task.description || 'No description provided.'}
-            </div>
-          </div>
-
-          {/* Metadata */}
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div className="bg-black/20 rounded-xl p-3">
-              <span className="text-white/50">Created</span>
-              <p className="text-white/80 mt-1">
-                {new Date(task.created_at).toLocaleString()}
-              </p>
-            </div>
-            <div className="bg-black/20 rounded-xl p-3">
-              <span className="text-white/50">Last Updated</span>
-              <p className="text-white/80 mt-1">
-                {new Date(task.updated_at).toLocaleString()}
-              </p>
-            </div>
-          </div>
-
-          {/* Comments Section */}
-          <div>
-            <label className="block text-sm font-medium text-white/70 mb-3">
-              Comments ({comments.length})
-            </label>
-            
-            <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
-              {loadingComments ? (
-                <div className="text-white/40 text-sm text-center py-4">Loading comments...</div>
-              ) : comments.length === 0 ? (
-                <div className="text-white/40 text-sm text-center py-4">No comments yet</div>
+                </div>
+              </div>
+            </>
+          ) : (
+            /* Activity Tab */
+            <div className="space-y-3">
+              {activities.length === 0 ? (
+                <div className="text-white/40 text-sm text-center py-8">No activity recorded yet</div>
               ) : (
-                comments.map((comment) => (
-                  <div key={comment.id} className="bg-black/20 rounded-xl p-3">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-white/80 text-sm font-medium">{comment.author}</span>
-                      <span className="text-white/40 text-xs">
-                        {new Date(comment.created_at).toLocaleString()}
-                      </span>
+                activities.map((activity) => (
+                  <div key={activity.id} className="flex gap-3 text-sm">
+                    <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <div className="text-white/80">
+                        <span className="font-medium">{activity.actor}</span>
+                        {' '}changed{' '}
+                        <span className="text-blue-400">{activity.field_changed}</span>
+                        {activity.old_value && (
+                          <>
+                            {' '}from <span className="text-white/50">{activity.old_value}</span>
+                          </>
+                        )}
+                        {' '}to <span className="text-white">{activity.new_value}</span>
+                      </div>
+                      <div className="text-white/40 text-xs mt-0.5">
+                        {new Date(activity.created_at).toLocaleString()}
+                      </div>
                     </div>
-                    <p className="text-white/70 text-sm whitespace-pre-wrap">{comment.content}</p>
                   </div>
                 ))
               )}
             </div>
-
-            {/* Add Comment */}
-            <div className="flex gap-2">
-              <textarea
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Add a comment or instruction..."
-                rows={2}
-                className="flex-1 px-4 py-2.5 bg-black/30 border border-white/10 rounded-xl text-white placeholder-white/40 focus:border-blue-500/50 focus:bg-black/40 focus:ring-2 focus:ring-blue-500/20 resize-none text-sm"
-              />
-              <button
-                onClick={handleAddComment}
-                disabled={!newComment.trim() || submittingComment}
-                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-purple-500/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all self-end"
-              >
-                {submittingComment ? '...' : 'Send'}
-              </button>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Footer */}

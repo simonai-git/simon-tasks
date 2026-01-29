@@ -18,9 +18,27 @@ async function initDb() {
         assignee TEXT NOT NULL DEFAULT 'Simon',
         priority TEXT DEFAULT 'medium',
         due_date TEXT,
+        estimated_hours DECIMAL,
+        time_spent DECIMAL DEFAULT 0,
+        progress INTEGER DEFAULT 0,
+        is_blocked BOOLEAN DEFAULT FALSE,
+        blocked_reason TEXT,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
+    `);
+    
+    // Add new columns if they don't exist (for existing databases)
+    await client.query(`
+      DO $$ 
+      BEGIN
+        ALTER TABLE tasks ADD COLUMN IF NOT EXISTS estimated_hours DECIMAL;
+        ALTER TABLE tasks ADD COLUMN IF NOT EXISTS time_spent DECIMAL DEFAULT 0;
+        ALTER TABLE tasks ADD COLUMN IF NOT EXISTS progress INTEGER DEFAULT 0;
+        ALTER TABLE tasks ADD COLUMN IF NOT EXISTS is_blocked BOOLEAN DEFAULT FALSE;
+        ALTER TABLE tasks ADD COLUMN IF NOT EXISTS blocked_reason TEXT;
+      EXCEPTION WHEN OTHERS THEN NULL;
+      END $$;
     `);
     
     await client.query(`
@@ -29,6 +47,19 @@ async function initDb() {
         task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
         author TEXT NOT NULL,
         content TEXT NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS activity_log (
+        id TEXT PRIMARY KEY,
+        task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+        action TEXT NOT NULL,
+        field_changed TEXT,
+        old_value TEXT,
+        new_value TEXT,
+        actor TEXT NOT NULL,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
@@ -50,6 +81,11 @@ export interface Task {
   assignee: 'Bogdan' | 'Simon';
   priority: 'low' | 'medium' | 'high';
   due_date: string | null;
+  estimated_hours: number | null;
+  time_spent: number;
+  progress: number;
+  is_blocked: boolean;
+  blocked_reason: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -69,12 +105,25 @@ export async function getTasksByStatus(status: string): Promise<Task[]> {
   return result.rows;
 }
 
-export async function createTask(task: Omit<Task, 'created_at' | 'updated_at'>): Promise<Task> {
+export async function createTask(task: Partial<Task> & { id: string; title: string }): Promise<Task> {
   const result = await pool.query(
-    `INSERT INTO tasks (id, title, description, status, assignee, priority, due_date)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `INSERT INTO tasks (id, title, description, status, assignee, priority, due_date, estimated_hours, time_spent, progress, is_blocked, blocked_reason)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
      RETURNING *`,
-    [task.id, task.title, task.description, task.status, task.assignee, task.priority, task.due_date]
+    [
+      task.id,
+      task.title,
+      task.description || null,
+      task.status || 'todo',
+      task.assignee || 'Simon',
+      task.priority || 'medium',
+      task.due_date || null,
+      task.estimated_hours || null,
+      task.time_spent || 0,
+      task.progress || 0,
+      task.is_blocked || false,
+      task.blocked_reason || null
+    ]
   );
   return result.rows[0];
 }
@@ -129,6 +178,36 @@ export async function createComment(comment: Omit<Comment, 'created_at'>): Promi
 export async function deleteComment(id: string): Promise<boolean> {
   const result = await pool.query('DELETE FROM comments WHERE id = $1', [id]);
   return (result.rowCount ?? 0) > 0;
+}
+
+// Activity Log
+export interface ActivityLog {
+  id: string;
+  task_id: string;
+  action: string;
+  field_changed: string | null;
+  old_value: string | null;
+  new_value: string | null;
+  actor: string;
+  created_at: string;
+}
+
+export async function logActivity(log: Omit<ActivityLog, 'created_at'>): Promise<ActivityLog> {
+  const result = await pool.query(
+    `INSERT INTO activity_log (id, task_id, action, field_changed, old_value, new_value, actor)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     RETURNING *`,
+    [log.id, log.task_id, log.action, log.field_changed, log.old_value, log.new_value, log.actor]
+  );
+  return result.rows[0];
+}
+
+export async function getActivityByTaskId(taskId: string): Promise<ActivityLog[]> {
+  const result = await pool.query(
+    'SELECT * FROM activity_log WHERE task_id = $1 ORDER BY created_at DESC',
+    [taskId]
+  );
+  return result.rows;
 }
 
 export default pool;
