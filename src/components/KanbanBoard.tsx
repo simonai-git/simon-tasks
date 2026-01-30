@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import {
   DndContext,
@@ -13,11 +13,12 @@ import {
   closestCorners,
 } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
-import { Task } from '@/lib/db';
+import { Task, WatcherConfig } from '@/lib/db';
 import Column from './Column';
 import TaskModal from './TaskModal';
 import TaskDetailModal from './TaskDetailModal';
 import MetricsPanel from './MetricsPanel';
+import { useRealtimeUpdates } from '@/hooks/useRealtimeUpdates';
 
 const columns = [
   { id: 'todo', title: 'To Do', icon: '📋', gradient: 'from-slate-500 to-slate-600' },
@@ -36,13 +37,6 @@ const sortByUpdatedAt = (tasks: Task[]): Task[] => {
   });
 };
 
-interface WatcherConfig {
-  is_running: boolean;
-  last_run: string | null;
-  current_task_id: string | null;
-  active_task_ids: string; // JSON array string
-}
-
 export default function KanbanBoard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -53,6 +47,7 @@ export default function KanbanBoard() {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [watcherConfig, setWatcherConfig] = useState<WatcherConfig | null>(null);
   const [togglingWatcher, setTogglingWatcher] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
   const { data: session } = useSession();
 
   const sensors = useSensors(
@@ -63,12 +58,50 @@ export default function KanbanBoard() {
     })
   );
 
+  // Handle realtime task updates - merge with local state to preserve drag state
+  const handleTasksUpdate = useCallback((newTasks: Task[]) => {
+    setTasks(currentTasks => {
+      // If we're not dragging, just use the new tasks
+      if (!activeId) {
+        return newTasks;
+      }
+      // If dragging, preserve the dragged task's local status
+      const draggedTask = currentTasks.find(t => t.id === activeId);
+      if (!draggedTask) {
+        return newTasks;
+      }
+      return newTasks.map(t => 
+        t.id === activeId ? { ...t, status: draggedTask.status } : t
+      );
+    });
+    setLoading(false);
+    
+    // Update detail task if it's open
+    setDetailTask(current => {
+      if (!current) return null;
+      const updated = newTasks.find(t => t.id === current.id);
+      return updated || current;
+    });
+  }, [activeId]);
+
+  // Handle watcher config updates
+  const handleWatcherUpdate = useCallback((watcher: WatcherConfig) => {
+    setWatcherConfig(watcher);
+  }, []);
+
+  // Real-time updates via SSE
+  useRealtimeUpdates({
+    onTasksUpdate: handleTasksUpdate,
+    onWatcherUpdate: handleWatcherUpdate,
+    onConnect: () => setIsConnected(true),
+    onDisconnect: () => setIsConnected(false),
+    enabled: true,
+  });
+
+  // Initial data fetch as fallback (SSE will take over once connected)
   useEffect(() => {
     fetchTasks();
     fetchWatcherConfig();
-    // Poll watcher config every 30 seconds
-    const interval = setInterval(fetchWatcherConfig, 30000);
-    return () => clearInterval(interval);
   }, []);
 
   const fetchWatcherConfig = async () => {
@@ -292,34 +325,61 @@ export default function KanbanBoard() {
             </a>
           </div>
           
-          {/* Watcher Toggle */}
-          <button
-            onClick={toggleWatcher}
-            disabled={togglingWatcher}
-            className={`group flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl font-medium transition-all text-xs sm:text-sm ${
-              watcherConfig?.is_running
-                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30'
-                : 'bg-white/5 text-white/50 border border-white/10 hover:bg-white/10 hover:text-white/70'
-            }`}
-            title={watcherConfig?.is_running ? 'Watcher is running - click to pause' : 'Watcher is paused - click to start'}
-          >
-            {togglingWatcher ? (
-              <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-            ) : watcherConfig?.is_running ? (
-              <>
-                <span className="relative flex h-2.5 w-2.5 sm:h-3 sm:w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 sm:h-3 sm:w-3 bg-emerald-500"></span>
-                </span>
-                <span className="hidden sm:inline">Watcher</span>
-              </>
-            ) : (
-              <>
-                <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-white/30"></span>
-                <span className="hidden sm:inline">Paused</span>
-              </>
-            )}
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Live Updates Indicator */}
+            <div
+              className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs transition-all ${
+                isConnected
+                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                  : 'bg-white/5 text-white/40 border border-white/10'
+              }`}
+              title={isConnected ? 'Real-time updates active' : 'Connecting...'}
+            >
+              {isConnected ? (
+                <>
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                  </span>
+                  <span className="hidden sm:inline">Live</span>
+                </>
+              ) : (
+                <>
+                  <div className="w-2 h-2 border border-current border-t-transparent rounded-full animate-spin" />
+                  <span className="hidden sm:inline">...</span>
+                </>
+              )}
+            </div>
+            
+            {/* Watcher Toggle */}
+            <button
+              onClick={toggleWatcher}
+              disabled={togglingWatcher}
+              className={`group flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl font-medium transition-all text-xs sm:text-sm ${
+                watcherConfig?.is_running
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30'
+                  : 'bg-white/5 text-white/50 border border-white/10 hover:bg-white/10 hover:text-white/70'
+              }`}
+              title={watcherConfig?.is_running ? 'Watcher is running - click to pause' : 'Watcher is paused - click to start'}
+            >
+              {togglingWatcher ? (
+                <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              ) : watcherConfig?.is_running ? (
+                <>
+                  <span className="relative flex h-2.5 w-2.5 sm:h-3 sm:w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 sm:h-3 sm:w-3 bg-emerald-500"></span>
+                  </span>
+                  <span className="hidden sm:inline">Watcher</span>
+                </>
+              ) : (
+                <>
+                  <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-white/30"></span>
+                  <span className="hidden sm:inline">Paused</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
