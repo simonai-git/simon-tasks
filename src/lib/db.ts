@@ -92,6 +92,39 @@ async function initDb() {
       ON CONFLICT (id) DO NOTHING
     `);
     
+    // Create agents table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS agents (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL UNIQUE,
+        specialization TEXT NOT NULL,
+        description TEXT,
+        system_prompt TEXT,
+        memory TEXT,
+        avatar_emoji TEXT DEFAULT '🤖',
+        avatar_color TEXT DEFAULT 'from-blue-500 to-purple-500',
+        is_active BOOLEAN DEFAULT TRUE,
+        tasks_completed INTEGER DEFAULT 0,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    
+    // Create default Simon agent if not exists
+    await client.query(`
+      INSERT INTO agents (id, name, specialization, description, system_prompt, avatar_emoji, avatar_color)
+      VALUES (
+        'agent-simon',
+        'Simon',
+        'Full Stack Developer',
+        'General-purpose AI agent capable of handling various development tasks including frontend, backend, and DevOps.',
+        'You are Simon, a skilled full-stack developer. You write clean, efficient code and follow best practices.',
+        '🦊',
+        'from-orange-500 to-amber-500'
+      )
+      ON CONFLICT (name) DO NOTHING
+    `);
+    
     console.log('Database initialized');
   } finally {
     client.release();
@@ -277,6 +310,91 @@ export async function toggleWatcher(): Promise<WatcherConfig> {
     `UPDATE watcher_config SET is_running = NOT is_running, updated_at = NOW() WHERE id = 'singleton' RETURNING *`
   );
   return result.rows[0];
+}
+
+// Agents
+export interface Agent {
+  id: string;
+  name: string;
+  specialization: string;
+  description: string | null;
+  system_prompt: string | null;
+  memory: string | null;
+  avatar_emoji: string;
+  avatar_color: string;
+  is_active: boolean;
+  tasks_completed: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function getAllAgents(): Promise<Agent[]> {
+  const result = await pool.query('SELECT * FROM agents ORDER BY created_at DESC');
+  return result.rows;
+}
+
+export async function getActiveAgents(): Promise<Agent[]> {
+  const result = await pool.query('SELECT * FROM agents WHERE is_active = TRUE ORDER BY name ASC');
+  return result.rows;
+}
+
+export async function getAgent(id: string): Promise<Agent | null> {
+  const result = await pool.query('SELECT * FROM agents WHERE id = $1', [id]);
+  return result.rows[0] || null;
+}
+
+export async function getAgentByName(name: string): Promise<Agent | null> {
+  const result = await pool.query('SELECT * FROM agents WHERE name = $1', [name]);
+  return result.rows[0] || null;
+}
+
+export async function createAgent(agent: Partial<Agent> & { id: string; name: string; specialization: string }): Promise<Agent> {
+  const result = await pool.query(
+    `INSERT INTO agents (id, name, specialization, description, system_prompt, memory, avatar_emoji, avatar_color, is_active, tasks_completed)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+     RETURNING *`,
+    [
+      agent.id,
+      agent.name,
+      agent.specialization,
+      agent.description || null,
+      agent.system_prompt || null,
+      agent.memory || null,
+      agent.avatar_emoji || '🤖',
+      agent.avatar_color || 'from-blue-500 to-purple-500',
+      agent.is_active !== false,
+      agent.tasks_completed || 0
+    ]
+  );
+  return result.rows[0];
+}
+
+export async function updateAgent(id: string, updates: Partial<Agent>): Promise<Agent | null> {
+  const fields = Object.keys(updates).filter(k => k !== 'id' && k !== 'created_at');
+  if (fields.length === 0) return null;
+  
+  const setClause = fields.map((f, i) => `${f} = $${i + 1}`).join(', ');
+  const values = fields.map(f => updates[f as keyof Agent]);
+  
+  const result = await pool.query(
+    `UPDATE agents SET ${setClause}, updated_at = NOW() WHERE id = $${fields.length + 1} RETURNING *`,
+    [...values, id]
+  );
+  
+  return result.rows[0] || null;
+}
+
+export async function deleteAgent(id: string): Promise<boolean> {
+  const result = await pool.query('DELETE FROM agents WHERE id = $1', [id]);
+  return (result.rowCount ?? 0) > 0;
+}
+
+export async function incrementAgentTasksCompleted(id: string): Promise<Agent | null> {
+  const result = await pool.query(
+    `UPDATE agents SET tasks_completed = tasks_completed + 1, updated_at = NOW() WHERE id = $1 RETURNING *`,
+    [id]
+  );
+  return result.rows[0] || null;
 }
 
 export default pool;

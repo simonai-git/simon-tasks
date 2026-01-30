@@ -1,0 +1,431 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+
+interface Agent {
+  id: string;
+  name: string;
+  specialization: string;
+  description: string | null;
+  system_prompt: string | null;
+  memory: string | null;
+  avatar_emoji: string;
+  avatar_color: string;
+  is_active: boolean;
+  tasks_completed: number;
+  created_at: string;
+  updated_at: string;
+}
+
+const SPECIALIZATIONS = [
+  { value: 'Full Stack Developer', label: 'Full Stack Developer', emoji: '🚀' },
+  { value: 'Frontend Developer', label: 'Frontend / UI Developer', emoji: '🎨' },
+  { value: 'Backend Developer', label: 'Backend Developer', emoji: '⚙️' },
+  { value: 'DevOps Engineer', label: 'DevOps Engineer', emoji: '🔧' },
+  { value: 'AI Engineer', label: 'AI / ML Engineer', emoji: '🤖' },
+  { value: 'Graphic Designer', label: 'Graphic Designer', emoji: '✨' },
+  { value: 'QA Engineer', label: 'QA / Test Engineer', emoji: '🧪' },
+  { value: 'Data Engineer', label: 'Data Engineer', emoji: '📊' },
+  { value: 'Security Engineer', label: 'Security Engineer', emoji: '🔒' },
+  { value: 'Mobile Developer', label: 'Mobile Developer', emoji: '📱' },
+  { value: 'Technical Writer', label: 'Technical Writer', emoji: '📝' },
+  { value: 'Project Manager', label: 'Project Manager', emoji: '📋' },
+];
+
+const AVATAR_COLORS = [
+  'from-blue-500 to-purple-500',
+  'from-orange-500 to-amber-500',
+  'from-emerald-500 to-teal-500',
+  'from-pink-500 to-rose-500',
+  'from-cyan-500 to-blue-500',
+  'from-violet-500 to-purple-500',
+  'from-red-500 to-orange-500',
+  'from-lime-500 to-green-500',
+];
+
+const AVATAR_EMOJIS = ['🤖', '🦊', '🐙', '🦾', '🧠', '⚡', '🔮', '🎯', '🛠️', '💡', '🚀', '🎨'];
+
+export default function AgentsPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    specialization: 'Full Stack Developer',
+    description: '',
+    system_prompt: '',
+    memory: '',
+    avatar_emoji: '🤖',
+    avatar_color: 'from-blue-500 to-purple-500',
+    is_active: true,
+  });
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    }
+  }, [status, router]);
+
+  useEffect(() => {
+    fetchAgents();
+  }, []);
+
+  const fetchAgents = async () => {
+    try {
+      const res = await fetch('/api/agents', {
+        headers: { 'x-api-key': process.env.NEXT_PUBLIC_API_KEY || '' },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAgents(data);
+      }
+    } catch (error) {
+      console.error('Error fetching agents:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      const url = editingAgent ? `/api/agents/${editingAgent.id}` : '/api/agents';
+      const method = editingAgent ? 'PATCH' : 'POST';
+      
+      const res = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.NEXT_PUBLIC_API_KEY || '',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (res.ok) {
+        fetchAgents();
+        closeModal();
+      } else {
+        const error = await res.json();
+        alert(error.error || 'Failed to save agent');
+      }
+    } catch (error) {
+      console.error('Error saving agent:', error);
+      alert('Failed to save agent');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this agent?')) return;
+    
+    try {
+      const res = await fetch(`/api/agents/${id}`, {
+        method: 'DELETE',
+        headers: { 'x-api-key': process.env.NEXT_PUBLIC_API_KEY || '' },
+      });
+
+      if (res.ok) {
+        fetchAgents();
+      } else {
+        const error = await res.json();
+        alert(error.error || 'Failed to delete agent');
+      }
+    } catch (error) {
+      console.error('Error deleting agent:', error);
+    }
+  };
+
+  const openCreateModal = () => {
+    setEditingAgent(null);
+    setFormData({
+      name: '',
+      specialization: 'Full Stack Developer',
+      description: '',
+      system_prompt: '',
+      memory: '',
+      avatar_emoji: '🤖',
+      avatar_color: AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)],
+      is_active: true,
+    });
+    setShowModal(true);
+  };
+
+  const openEditModal = (agent: Agent) => {
+    setEditingAgent(agent);
+    setFormData({
+      name: agent.name,
+      specialization: agent.specialization,
+      description: agent.description || '',
+      system_prompt: agent.system_prompt || '',
+      memory: agent.memory || '',
+      avatar_emoji: agent.avatar_emoji,
+      avatar_color: agent.avatar_color,
+      is_active: agent.is_active,
+    });
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setEditingAgent(null);
+  };
+
+  if (status === 'loading' || loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+          <span className="text-white/60">Loading agents...</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-3 sm:p-6 lg:p-8 max-w-[1600px] mx-auto">
+      {/* Header */}
+      <div className="glass rounded-2xl p-4 sm:p-6 mb-4 sm:mb-8 animate-fade-in">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-3">
+              <Link href="/" className="text-white/50 hover:text-white transition-colors">
+                ← Back
+              </Link>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold gradient-text truncate">
+                AI Agent Team
+              </h1>
+            </div>
+            <p className="text-white/50 text-xs sm:text-sm hidden md:block mt-1">
+              Create and manage specialized AI agents for your team
+            </p>
+          </div>
+          
+          <button
+            onClick={openCreateModal}
+            className="group flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg sm:rounded-xl font-medium hover:shadow-lg hover:shadow-purple-500/25 hover:scale-105 active:scale-95 text-xs sm:text-sm"
+          >
+            <span className="text-base sm:text-lg group-hover:rotate-90 transition-transform duration-200">+</span>
+            <span>New Agent</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Agent Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {agents.map((agent) => (
+          <div
+            key={agent.id}
+            className={`glass rounded-xl p-4 sm:p-5 animate-fade-in transition-all hover:scale-[1.02] ${
+              !agent.is_active ? 'opacity-60' : ''
+            }`}
+          >
+            <div className="flex items-start gap-3">
+              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${agent.avatar_color} flex items-center justify-center text-2xl shadow-lg flex-shrink-0`}>
+                {agent.avatar_emoji}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-white truncate">{agent.name}</h3>
+                  {!agent.is_active && (
+                    <span className="text-[10px] px-1.5 py-0.5 bg-white/10 rounded text-white/50">Inactive</span>
+                  )}
+                </div>
+                <p className="text-sm text-white/60">{agent.specialization}</p>
+              </div>
+            </div>
+            
+            {agent.description && (
+              <p className="mt-3 text-sm text-white/50 line-clamp-2">{agent.description}</p>
+            )}
+            
+            <div className="mt-4 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs text-white/40">
+                <span>✅ {agent.tasks_completed} tasks</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => openEditModal(agent)}
+                  className="p-1.5 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition-colors"
+                  title="Edit agent"
+                >
+                  ✏️
+                </button>
+                {agent.id !== 'agent-simon' && (
+                  <button
+                    onClick={() => handleDelete(agent.id)}
+                    className="p-1.5 rounded-lg hover:bg-red-500/20 text-white/50 hover:text-red-400 transition-colors"
+                    title="Delete agent"
+                  >
+                    🗑️
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+        
+        {agents.length === 0 && (
+          <div className="col-span-full text-center py-12 text-white/40">
+            <p className="text-4xl mb-4">🤖</p>
+            <p>No agents yet. Create your first AI team member!</p>
+          </div>
+        )}
+      </div>
+
+      {/* Create/Edit Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeModal} />
+          <div className="relative glass rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto animate-fade-in">
+            <h2 className="text-xl font-bold text-white mb-4">
+              {editingAgent ? 'Edit Agent' : 'Create New Agent'}
+            </h2>
+            
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Avatar Preview & Selection */}
+              <div className="flex items-center gap-4">
+                <div className={`w-16 h-16 rounded-xl bg-gradient-to-br ${formData.avatar_color} flex items-center justify-center text-3xl shadow-lg`}>
+                  {formData.avatar_emoji}
+                </div>
+                <div className="flex-1 space-y-2">
+                  <div className="flex flex-wrap gap-1">
+                    {AVATAR_EMOJIS.map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, avatar_emoji: emoji })}
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+                          formData.avatar_emoji === emoji ? 'bg-white/20 scale-110' : 'hover:bg-white/10'
+                        }`}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {AVATAR_COLORS.map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, avatar_color: color })}
+                        className={`w-6 h-6 rounded-full bg-gradient-to-br ${color} transition-all ${
+                          formData.avatar_color === color ? 'ring-2 ring-white scale-110' : ''
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Name */}
+              <div>
+                <label className="block text-sm text-white/70 mb-1">Name *</label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white placeholder-white/30 focus:outline-none focus:border-blue-500/50"
+                  placeholder="e.g., Alex"
+                  required
+                />
+              </div>
+
+              {/* Specialization */}
+              <div>
+                <label className="block text-sm text-white/70 mb-1">Specialization *</label>
+                <select
+                  value={formData.specialization}
+                  onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500/50"
+                >
+                  {SPECIALIZATIONS.map((spec) => (
+                    <option key={spec.value} value={spec.value} className="bg-slate-800">
+                      {spec.emoji} {spec.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-sm text-white/70 mb-1">Description</label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white placeholder-white/30 focus:outline-none focus:border-blue-500/50 resize-none"
+                  placeholder="Brief description of this agent's capabilities..."
+                  rows={2}
+                />
+              </div>
+
+              {/* System Prompt */}
+              <div>
+                <label className="block text-sm text-white/70 mb-1">System Prompt</label>
+                <textarea
+                  value={formData.system_prompt}
+                  onChange={(e) => setFormData({ ...formData, system_prompt: e.target.value })}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white placeholder-white/30 focus:outline-none focus:border-blue-500/50 resize-none font-mono text-sm"
+                  placeholder="Instructions for how this agent should behave..."
+                  rows={4}
+                />
+              </div>
+
+              {/* Memory */}
+              <div>
+                <label className="block text-sm text-white/70 mb-1">Memory / Context</label>
+                <textarea
+                  value={formData.memory}
+                  onChange={(e) => setFormData({ ...formData, memory: e.target.value })}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white placeholder-white/30 focus:outline-none focus:border-blue-500/50 resize-none font-mono text-sm"
+                  placeholder="Persistent knowledge or context for this agent..."
+                  rows={3}
+                />
+              </div>
+
+              {/* Active Toggle */}
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, is_active: !formData.is_active })}
+                  className={`w-12 h-6 rounded-full transition-colors ${
+                    formData.is_active ? 'bg-emerald-500' : 'bg-white/20'
+                  }`}
+                >
+                  <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                    formData.is_active ? 'translate-x-6' : 'translate-x-0.5'
+                  }`} />
+                </button>
+                <span className="text-sm text-white/70">
+                  {formData.is_active ? 'Active' : 'Inactive'} - {formData.is_active ? 'Can receive tasks' : 'Will not receive tasks'}
+                </span>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="flex-1 px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/25 transition-all"
+                >
+                  {editingAgent ? 'Save Changes' : 'Create Agent'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
