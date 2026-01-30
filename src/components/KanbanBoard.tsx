@@ -25,18 +25,12 @@ const columns = [
   { id: 'done', title: 'Done', icon: '✅', gradient: 'from-emerald-500 to-teal-600' },
 ];
 
-// Priority order for sorting: high on top, then medium, then low
-const priorityOrder: Record<string, number> = {
-  high: 0,
-  medium: 1,
-  low: 2,
-};
-
-const sortByPriority = (tasks: Task[]): Task[] => {
+// Sort by updated_at in descending order (most recent first)
+const sortByUpdatedAt = (tasks: Task[]): Task[] => {
   return [...tasks].sort((a, b) => {
-    const aPriority = priorityOrder[a.priority] ?? 1;
-    const bPriority = priorityOrder[b.priority] ?? 1;
-    return aPriority - bPriority;
+    const aDate = new Date(a.updated_at || a.created_at).getTime();
+    const bDate = new Date(b.updated_at || b.created_at).getTime();
+    return bDate - aDate; // Descending order (most recent first)
   });
 };
 
@@ -336,7 +330,7 @@ export default function KanbanBoard() {
                 title={column.title}
                 icon={column.icon}
                 gradient={column.gradient}
-                tasks={sortByPriority(tasks.filter(t => t.status === column.id))}
+                tasks={sortByUpdatedAt(tasks.filter(t => t.status === column.id))}
                 onEditTask={openEditModal}
                 onDeleteTask={handleDeleteTask}
                 onViewTask={openDetailModal}
