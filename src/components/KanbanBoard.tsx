@@ -232,7 +232,7 @@ export default function KanbanBoard() {
     <div className="p-3 sm:p-6 lg:p-8 max-w-[1600px] mx-auto">
       {/* Header */}
       <div className="glass rounded-2xl p-4 sm:p-6 mb-4 sm:mb-8 animate-fade-in">
-        {/* Single row header with title left, actions right */}
+        {/* Row 1: Title left, User info right */}
         <div className="flex items-center justify-between gap-3">
           {/* Title */}
           <div className="min-w-0">
@@ -244,75 +244,61 @@ export default function KanbanBoard() {
             </p>
           </div>
           
-          {/* Action buttons - right side */}
-          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-            {/* Watcher Toggle */}
-            <button
-              onClick={toggleWatcher}
-              disabled={togglingWatcher}
-              className={`group flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl font-medium transition-all text-xs sm:text-sm ${
-                watcherConfig?.is_running
-                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30'
-                  : 'bg-white/5 text-white/50 border border-white/10 hover:bg-white/10 hover:text-white/70'
-              }`}
-              title={watcherConfig?.is_running ? 'Watcher is running - click to pause' : 'Watcher is paused - click to start'}
-            >
-              {togglingWatcher ? (
-                <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-              ) : watcherConfig?.is_running ? (
-                <>
-                  <span className="relative flex h-2.5 w-2.5 sm:h-3 sm:w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 sm:h-3 sm:w-3 bg-emerald-500"></span>
-                  </span>
-                  <span className="hidden sm:inline">Watcher</span>
-                </>
-              ) : (
-                <>
-                  <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-white/30"></span>
-                  <span className="hidden sm:inline">Paused</span>
-                </>
+          {/* User info */}
+          {session?.user && (
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {session.user.image && (
+                <img src={session.user.image} alt="" className="w-6 h-6 sm:w-8 sm:h-8 rounded-full" />
               )}
-            </button>
-            
-            {/* New Task Button */}
-            <button
-              onClick={openCreateModal}
-              className="group flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg sm:rounded-xl font-medium hover:shadow-lg hover:shadow-purple-500/25 hover:scale-105 active:scale-95 text-xs sm:text-sm"
-            >
-              <span className="text-base sm:text-lg group-hover:rotate-90 transition-transform duration-200">+</span>
-              <span className="hidden sm:inline">New Task</span>
-            </button>
-            
-            {/* User info */}
-            {session?.user && (
-              <div className="flex items-center gap-2 ml-1 sm:ml-2">
-                {session.user.image && (
-                  <img src={session.user.image} alt="" className="w-6 h-6 sm:w-8 sm:h-8 rounded-full" />
-                )}
-                <button
-                  onClick={() => signOut()}
-                  className="text-white/40 hover:text-white/70 text-xs transition-colors hidden sm:block"
-                >
-                  Sign out
-                </button>
-              </div>
-            )}
-          </div>
+              <button
+                onClick={() => signOut()}
+                className="text-white/40 hover:text-white/70 text-xs transition-colors hidden sm:block"
+              >
+                Sign out
+              </button>
+            </div>
+          )}
         </div>
         
-        {/* Stats - horizontal scroll on mobile */}
-        <div className="flex gap-3 sm:gap-6 mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-white/10 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
-          {columns.map((col) => {
-            const count = tasks.filter(t => t.status === col.id).length;
-            return (
-              <div key={col.id} className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-                <span className="text-base sm:text-lg">{col.icon}</span>
-                <span className="text-white/70 text-xs sm:text-sm whitespace-nowrap">{col.title}:</span>
-                <span className="text-white font-semibold text-sm sm:text-base">{count}</span>
-              </div>
-            );
-          })}
+        {/* Row 2: New Task left, Watcher right */}
+        <div className="flex items-center justify-between gap-3 mt-4 pt-4 border-t border-white/10">
+          {/* New Task Button */}
+          <button
+            onClick={openCreateModal}
+            className="group flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg sm:rounded-xl font-medium hover:shadow-lg hover:shadow-purple-500/25 hover:scale-105 active:scale-95 text-xs sm:text-sm"
+          >
+            <span className="text-base sm:text-lg group-hover:rotate-90 transition-transform duration-200">+</span>
+            <span className="hidden sm:inline">New Task</span>
+          </button>
+          
+          {/* Watcher Toggle */}
+          <button
+            onClick={toggleWatcher}
+            disabled={togglingWatcher}
+            className={`group flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl font-medium transition-all text-xs sm:text-sm ${
+              watcherConfig?.is_running
+                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30'
+                : 'bg-white/5 text-white/50 border border-white/10 hover:bg-white/10 hover:text-white/70'
+            }`}
+            title={watcherConfig?.is_running ? 'Watcher is running - click to pause' : 'Watcher is paused - click to start'}
+          >
+            {togglingWatcher ? (
+              <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+            ) : watcherConfig?.is_running ? (
+              <>
+                <span className="relative flex h-2.5 w-2.5 sm:h-3 sm:w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 sm:h-3 sm:w-3 bg-emerald-500"></span>
+                </span>
+                <span className="hidden sm:inline">Watcher</span>
+              </>
+            ) : (
+              <>
+                <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-white/30"></span>
+                <span className="hidden sm:inline">Paused</span>
+              </>
+            )}
+          </button>
         </div>
       </div>
 
