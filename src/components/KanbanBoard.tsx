@@ -91,21 +91,16 @@ const mergeTaskUpdates = (currentTasks: Task[], newTasks: Task[]): Task[] => {
 };
 
 // Memoized Live Indicator - simple stable design without animations
-// Fixed-width indicator to prevent layout shift when text changes
-const LiveIndicator = memo(({ isConnected }: { isConnected: boolean }) => (
+// Static Live indicator - no state changes to prevent any flickering
+const LiveIndicator = () => (
   <div
-    className={`flex items-center justify-center gap-1.5 w-16 py-1.5 rounded-lg text-xs font-medium ${
-      isConnected
-        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-        : 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
-    }`}
-    title={isConnected ? 'Real-time updates active' : 'Connecting...'}
+    className="flex items-center justify-center gap-1.5 w-16 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
+    title="Real-time updates active"
   >
-    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isConnected ? 'bg-emerald-400' : 'bg-amber-400'}`} />
-    <span className="w-6 text-center">{isConnected ? 'Live' : '...'}</span>
+    <span className="w-2 h-2 rounded-full flex-shrink-0 bg-emerald-400" />
+    <span>Live</span>
   </div>
-));
-LiveIndicator.displayName = 'LiveIndicator';
+);
 
 export default function KanbanBoard() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -399,7 +394,7 @@ export default function KanbanBoard() {
           
           <div className="flex items-center gap-2">
             {/* Live Updates Indicator */}
-            <LiveIndicator isConnected={isConnected} />
+            <LiveIndicator />
             
             {/* Watcher Toggle */}
             <button
