@@ -1,6 +1,20 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
+// Compare due date (YYYY-MM-DD string) against today in server's local time
+function isDateOverdue(dueDateStr: string): boolean {
+  // Parse the due date as local midnight (not UTC)
+  const [year, month, day] = dueDateStr.split('-').map(Number);
+  const dueDate = new Date(year, month - 1, day); // month is 0-indexed
+  
+  // Get today's date at local midnight
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  // Due date is overdue if it's before today
+  return dueDate < today;
+}
+
 interface TaskMetrics {
   total_tasks: number;
   by_status: Record<string, number>;
@@ -60,8 +74,7 @@ export async function GET() {
       
       // Overdue
       if (task.due_date && task.status !== 'done') {
-        const dueDate = new Date(task.due_date);
-        if (dueDate < now) {
+        if (isDateOverdue(task.due_date)) {
           overdueCount++;
         }
       }
