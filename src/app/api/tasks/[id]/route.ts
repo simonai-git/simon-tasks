@@ -24,8 +24,17 @@ export async function PATCH(
       return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     }
     
-    // Keep the assigned agent - don't auto-reassign based on status
-    // Tasks stay with their assigned agent throughout the workflow
+    // Auto-assign based on status transitions
+    if (body.status && body.status !== oldTask.status) {
+      if (body.status === 'in_review') {
+        // in_review → Bogdan (for human review)
+        body.assignee = 'Bogdan';
+      } else if ((body.status === 'todo' || body.status === 'in_progress') && oldTask.assignee === 'Bogdan') {
+        // Bogdan moving task back to todo/in_progress → Simon (default agent)
+        body.assignee = 'Simon';
+      }
+      // done → keep current assignee
+    }
     
     const task = await updateTask(id, body);
     if (!task) {
