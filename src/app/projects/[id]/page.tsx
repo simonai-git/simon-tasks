@@ -264,6 +264,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 {statusConfig.emoji} {statusConfig.label}
               </span>
             </div>
+            <div className="text-xs text-white/40 font-mono mb-1">#{project.id.slice(0, 8)}</div>
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">
               {project.title}
             </h1>

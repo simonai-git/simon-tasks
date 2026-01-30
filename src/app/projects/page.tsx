@@ -391,6 +391,7 @@ export default function ProjectsPage() {
                       </span>
                     )}
                   </div>
+                  <div className="text-[10px] text-white/30 font-mono mb-0.5">#{project.id.slice(0, 8)}</div>
                   <h3 className="font-semibold text-white text-lg truncate">{project.title}</h3>
                   {project.description && (
                     <p className="text-sm text-white/50 line-clamp-2 mt-1">{project.description}</p>
@@ -469,9 +470,14 @@ export default function ProjectsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeModal} />
           <div className="relative glass rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-fade-in">
-            <h2 className="text-xl font-bold text-white mb-4">
-              {editingProject ? 'Edit Project' : 'Create New Project'}
-            </h2>
+            <div className="mb-4">
+              {editingProject && (
+                <div className="text-xs text-white/40 font-mono mb-1">#{editingProject.id.slice(0, 8)}</div>
+              )}
+              <h2 className="text-xl font-bold text-white">
+                {editingProject ? 'Edit Project' : 'Create New Project'}
+              </h2>
+            </div>
             
             {/* Tabs */}
             <div className="flex gap-2 mb-4 border-b border-white/10 pb-2">
