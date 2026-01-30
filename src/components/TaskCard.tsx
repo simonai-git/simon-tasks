@@ -23,6 +23,20 @@ const assigneeConfig = {
   Simon: { color: 'from-purple-500 to-pink-500', emoji: '🦊' },
 };
 
+// Compare due date (YYYY-MM-DD string) against today in local time
+function isDateOverdue(dueDateStr: string): boolean {
+  // Parse the due date as local midnight (not UTC)
+  const [year, month, day] = dueDateStr.split('-').map(Number);
+  const dueDate = new Date(year, month - 1, day); // month is 0-indexed
+  
+  // Get today's date at local midnight
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  // Due date is overdue if it's before today
+  return dueDate < today;
+}
+
 export default function TaskCard({ task, onEdit, onDelete, onView, isActive = false }: TaskCardProps) {
   const {
     attributes,
@@ -40,7 +54,7 @@ export default function TaskCard({ task, onEdit, onDelete, onView, isActive = fa
 
   const priority = priorityConfig[task.priority];
   const assignee = assigneeConfig[task.assignee];
-  const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== 'done';
+  const isOverdue = task.due_date && isDateOverdue(task.due_date) && task.status !== 'done';
   const progress = task.progress || 0;
 
   return (

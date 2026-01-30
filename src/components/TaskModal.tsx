@@ -10,6 +10,15 @@ interface TaskModalProps {
   task?: Task | null;
 }
 
+// Get today's date as YYYY-MM-DD in local time
+function getTodayString(): string {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -166,12 +175,30 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
             <label className="block text-sm font-medium text-white/70 mb-2">
               Due Date
             </label>
-            <input
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="w-full px-4 py-2.5 bg-black/30 border border-white/10 rounded-xl text-white focus:border-blue-500/50 focus:bg-black/40 focus:ring-2 focus:ring-blue-500/20 [color-scheme:dark]"
-            />
+            <div className="flex gap-2">
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="flex-1 px-4 py-2.5 bg-black/30 border border-white/10 rounded-xl text-white focus:border-blue-500/50 focus:bg-black/40 focus:ring-2 focus:ring-blue-500/20 [color-scheme:dark]"
+              />
+              <button
+                type="button"
+                onClick={() => setDueDate(getTodayString())}
+                className="px-3 py-2.5 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 border border-blue-500/30 rounded-xl transition-all text-sm font-medium"
+              >
+                Today
+              </button>
+              {dueDate && (
+                <button
+                  type="button"
+                  onClick={() => setDueDate('')}
+                  className="px-3 py-2.5 text-white/50 hover:text-white/80 hover:bg-white/10 rounded-xl transition-all text-sm"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
           </div>
           
           {/* Actions */}

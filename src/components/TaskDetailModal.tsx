@@ -45,6 +45,29 @@ const priorityConfig = {
   high: { label: 'High', color: 'bg-red-500/20 text-red-400 border-red-500/30' },
 };
 
+// Compare due date (YYYY-MM-DD string) against today in local time
+function isDateOverdue(dueDateStr: string): boolean {
+  // Parse the due date as local midnight (not UTC)
+  const [year, month, day] = dueDateStr.split('-').map(Number);
+  const dueDate = new Date(year, month - 1, day); // month is 0-indexed
+  
+  // Get today's date at local midnight
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  // Due date is overdue if it's before today
+  return dueDate < today;
+}
+
+// Get today's date as YYYY-MM-DD in local time
+function getTodayString(): string {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDelete, isActive = false }: TaskDetailModalProps) {
   const { data: session } = useSession();
   const [comments, setComments] = useState<Comment[]>([]);
@@ -128,7 +151,7 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
 
   const status = statusConfig[task.status];
   const priority = priorityConfig[task.priority];
-  const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== 'done';
+  const isOverdue = task.due_date && isDateOverdue(task.due_date) && task.status !== 'done';
 
   return (
     <div className="fixed inset-0 modal-backdrop flex items-end sm:items-center justify-center z-50 p-0 sm:p-4" onClick={onClose}>
@@ -304,6 +327,12 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
                     onChange={(e) => handleFieldUpdate('due_date', e.target.value || null)}
                     className="flex-1 min-w-[150px] px-3 sm:px-4 py-2 sm:py-2.5 bg-black/30 border border-white/10 rounded-xl text-white focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 [color-scheme:dark] text-sm"
                   />
+                  <button
+                    onClick={() => handleFieldUpdate('due_date', getTodayString())}
+                    className="px-2.5 sm:px-3 py-1.5 sm:py-2 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 border border-blue-500/30 rounded-xl transition-all text-xs sm:text-sm font-medium"
+                  >
+                    Today
+                  </button>
                   {task.due_date && (
                     <button
                       onClick={() => handleFieldUpdate('due_date', null)}
