@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { useSession } from 'next-auth/react';
 import { Task } from '@/lib/db';
 
@@ -76,7 +76,7 @@ interface Agent {
   emoji?: string;
 }
 
-export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDelete, isActive = false }: TaskDetailModalProps) {
+function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDelete, isActive = false }: TaskDetailModalProps) {
   const { data: session } = useSession();
   const [comments, setComments] = useState<Comment[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
@@ -588,3 +588,23 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
     </div>
   );
 }
+
+// Memoize to prevent re-renders when parent state changes but task hasn't
+export default memo(TaskDetailModal, (prevProps, nextProps) => {
+  // Only re-render if these props actually changed
+  if (prevProps.isOpen !== nextProps.isOpen) return false;
+  if (prevProps.isActive !== nextProps.isActive) return false;
+  if (prevProps.task?.id !== nextProps.task?.id) return false;
+  // For task content, check user-visible fields
+  if (prevProps.task && nextProps.task) {
+    if (prevProps.task.title !== nextProps.task.title) return false;
+    if (prevProps.task.description !== nextProps.task.description) return false;
+    if (prevProps.task.status !== nextProps.task.status) return false;
+    if (prevProps.task.priority !== nextProps.task.priority) return false;
+    if (prevProps.task.assignee !== nextProps.task.assignee) return false;
+    if (prevProps.task.due_date !== nextProps.task.due_date) return false;
+    if (prevProps.task.progress !== nextProps.task.progress) return false;
+    if (prevProps.task.is_blocked !== nextProps.task.is_blocked) return false;
+  }
+  return true; // Props are equal, don't re-render
+});

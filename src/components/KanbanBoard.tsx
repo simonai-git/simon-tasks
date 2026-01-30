@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, memo, useMemo } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import {
   DndContext,
@@ -38,6 +38,7 @@ const sortByUpdatedAt = (tasks: Task[]): Task[] => {
 };
 
 // Deep equality check for tasks to avoid unnecessary re-renders
+// Compare user-visible task fields only (exclude updated_at to prevent timestamp-induced flicker)
 const tasksAreEqual = (a: Task, b: Task): boolean => {
   return (
     a.id === b.id &&
@@ -52,8 +53,8 @@ const tasksAreEqual = (a: Task, b: Task): boolean => {
     a.progress === b.progress &&
     a.is_blocked === b.is_blocked &&
     a.blocked_reason === b.blocked_reason &&
-    a.updated_at === b.updated_at &&
-    a.project_id === b.project_id
+    a.project_id === b.project_id &&
+    a.agent_context === b.agent_context
   );
 };
 
@@ -88,6 +89,34 @@ const mergeTaskUpdates = (currentTasks: Task[], newTasks: Task[]): Task[] => {
   // If nothing changed, return the original array to maintain reference equality
   return hasChanges ? merged : currentTasks;
 };
+
+// Memoized Live Indicator to prevent flickering on parent re-renders
+const LiveIndicator = memo(({ isConnected }: { isConnected: boolean }) => (
+  <div
+    className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs transition-all ${
+      isConnected
+        ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+        : 'bg-white/5 text-white/40 border border-white/10'
+    }`}
+    title={isConnected ? 'Real-time updates active' : 'Connecting...'}
+  >
+    {isConnected ? (
+      <>
+        <span className="relative flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+        </span>
+        <span className="hidden sm:inline">Live</span>
+      </>
+    ) : (
+      <>
+        <div className="w-2 h-2 border border-current border-t-transparent rounded-full animate-spin" />
+        <span className="hidden sm:inline">...</span>
+      </>
+    )}
+  </div>
+));
+LiveIndicator.displayName = 'LiveIndicator';
 
 export default function KanbanBoard() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -381,29 +410,7 @@ export default function KanbanBoard() {
           
           <div className="flex items-center gap-2">
             {/* Live Updates Indicator */}
-            <div
-              className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs transition-all ${
-                isConnected
-                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                  : 'bg-white/5 text-white/40 border border-white/10'
-              }`}
-              title={isConnected ? 'Real-time updates active' : 'Connecting...'}
-            >
-              {isConnected ? (
-                <>
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-                  </span>
-                  <span className="hidden sm:inline">Live</span>
-                </>
-              ) : (
-                <>
-                  <div className="w-2 h-2 border border-current border-t-transparent rounded-full animate-spin" />
-                  <span className="hidden sm:inline">...</span>
-                </>
-              )}
-            </div>
+            <LiveIndicator isConnected={isConnected} />
             
             {/* Watcher Toggle */}
             <button
