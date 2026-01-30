@@ -315,6 +315,15 @@ export default function ProjectsPage() {
         
         <div className="flex items-center justify-between gap-3 mt-4 pt-4 border-t border-white/10">
           <div className="flex items-center gap-2">
+            {/* New Project Button - First */}
+            <button
+              onClick={openCreateModal}
+              className="group flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg sm:rounded-xl font-medium hover:shadow-lg hover:shadow-purple-500/25 hover:scale-105 active:scale-95 text-xs sm:text-sm"
+            >
+              <span className="text-base sm:text-lg group-hover:rotate-90 transition-transform duration-200">+</span>
+              <span className="hidden sm:inline">New Project</span>
+            </button>
+            
             <Link
               href="/"
               className="group flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 bg-white/10 text-white rounded-lg sm:rounded-xl font-medium hover:bg-white/20 hover:scale-105 active:scale-95 text-xs sm:text-sm transition-all border border-white/10"
@@ -330,14 +339,6 @@ export default function ProjectsPage() {
               <span className="text-base sm:text-lg">🤖</span>
               <span className="hidden sm:inline">Agents</span>
             </Link>
-            
-            <button
-              onClick={openCreateModal}
-              className="group flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg sm:rounded-xl font-medium hover:shadow-lg hover:shadow-purple-500/25 hover:scale-105 active:scale-95 text-xs sm:text-sm"
-            >
-              <span className="text-base sm:text-lg group-hover:rotate-90 transition-transform duration-200">+</span>
-              <span className="hidden sm:inline">New Project</span>
-            </button>
           </div>
           
           {/* Status Filter */}
