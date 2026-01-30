@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getTask, updateTask, deleteTask, logActivity } from '@/lib/db';
+import { getTask, updateTask, deleteTask, logActivity, getProject } from '@/lib/db';
 import { sendWebhook } from '@/lib/webhook';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -24,13 +24,22 @@ export async function PATCH(
       return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     }
     
+    // Get project reviewer (if task belongs to a project)
+    let reviewer = 'Bogdan'; // default
+    if (oldTask.project_id) {
+      const project = await getProject(oldTask.project_id);
+      if (project?.reviewer) {
+        reviewer = project.reviewer;
+      }
+    }
+    
     // Auto-assign based on status transitions
     if (body.status && body.status !== oldTask.status) {
       if (body.status === 'in_review') {
-        // in_review → Bogdan (for human review)
-        body.assignee = 'Bogdan';
-      } else if ((body.status === 'todo' || body.status === 'in_progress') && oldTask.assignee === 'Bogdan') {
-        // Bogdan moving task back to todo/in_progress → Simon (default agent)
+        // in_review → project reviewer (or Bogdan if no project)
+        body.assignee = reviewer;
+      } else if ((body.status === 'todo' || body.status === 'in_progress') && oldTask.assignee === reviewer) {
+        // Reviewer moving task back to todo/in_progress → Simon (default agent)
         body.assignee = 'Simon';
       }
       // done → keep current assignee

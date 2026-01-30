@@ -133,6 +133,7 @@ async function initDb() {
         description TEXT,
         status TEXT NOT NULL DEFAULT 'defined',
         owner TEXT NOT NULL DEFAULT 'Bogdan',
+        reviewer TEXT NOT NULL DEFAULT 'Bogdan',
         prd TEXT,
         goals TEXT,
         requirements TEXT,
@@ -154,6 +155,15 @@ async function initDb() {
       DO $$ 
       BEGIN
         ALTER TABLE tasks ADD COLUMN IF NOT EXISTS project_id TEXT REFERENCES projects(id) ON DELETE SET NULL;
+      EXCEPTION WHEN OTHERS THEN NULL;
+      END $$;
+    `);
+    
+    // Add reviewer to projects table (defaults to owner, used for in_review auto-assign)
+    await client.query(`
+      DO $$ 
+      BEGIN
+        ALTER TABLE projects ADD COLUMN IF NOT EXISTS reviewer TEXT DEFAULT 'Bogdan';
       EXCEPTION WHEN OTHERS THEN NULL;
       END $$;
     `);
@@ -449,6 +459,7 @@ export interface Project {
   description: string | null;
   status: ProjectStatus;
   owner: string;
+  reviewer: string;  // Who reviews completed tasks (defaults to owner)
   prd: string | null;
   goals: string | null;
   requirements: string | null;

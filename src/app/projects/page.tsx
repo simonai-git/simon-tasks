@@ -13,6 +13,7 @@ interface Project {
   description: string | null;
   status: ProjectStatus;
   owner: string;
+  reviewer: string;
   prd: string | null;
   goals: string | null;
   requirements: string | null;
@@ -51,6 +52,7 @@ export default function ProjectsPage() {
     title: '',
     description: '',
     owner: 'Bogdan',
+    reviewer: 'Bogdan',
     prd: '',
     goals: '',
     requirements: '',
@@ -165,6 +167,7 @@ export default function ProjectsPage() {
       title: '',
       description: '',
       owner: 'Bogdan',
+      reviewer: 'Bogdan',
       prd: '',
       goals: '',
       requirements: '',
@@ -183,6 +186,7 @@ export default function ProjectsPage() {
       title: project.title,
       description: project.description || '',
       owner: project.owner,
+      reviewer: project.reviewer || 'Bogdan',
       prd: project.prd || '',
       goals: project.goals || '',
       requirements: project.requirements || '',
@@ -530,6 +534,20 @@ export default function ProjectsPage() {
                       />
                     </div>
 
+                    {/* Reviewer */}
+                    <div>
+                      <label className="block text-sm text-white/70 mb-1">Reviewer</label>
+                      <input
+                        type="text"
+                        value={formData.reviewer}
+                        onChange={(e) => setFormData({ ...formData, reviewer: e.target.value })}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white placeholder-white/30 focus:outline-none focus:border-blue-500/50"
+                        placeholder="Who reviews completed tasks"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
                     {/* Deadline */}
                     <div>
                       <label className="block text-sm text-white/70 mb-1">Deadline</label>
@@ -540,6 +558,7 @@ export default function ProjectsPage() {
                         className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500/50"
                       />
                     </div>
+                    <div></div>
                   </div>
 
                   {/* Goals */}
