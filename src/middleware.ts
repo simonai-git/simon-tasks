@@ -6,7 +6,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
   // Allow API key authentication for API routes
-  if (pathname.startsWith('/api/tasks') || pathname.startsWith('/api/watcher') || pathname.startsWith('/api/reports') || pathname.startsWith('/api/agents')) {
+  if (pathname.startsWith('/api/tasks') || pathname.startsWith('/api/watcher') || pathname.startsWith('/api/reports') || pathname.startsWith('/api/agents') || pathname.startsWith('/api/projects')) {
     const apiKey = request.headers.get('x-api-key');
     const validApiKey = process.env.SIMON_API_KEY;
     
