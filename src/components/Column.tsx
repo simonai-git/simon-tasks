@@ -85,7 +85,7 @@ export default function Column({ id, title, icon, gradient, tasks, onEditTask, o
           setNodeRef(el);
           (scrollContainerRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
         }}
-        className={`flex-1 glass rounded-b-xl p-2 sm:p-3 space-y-2 sm:space-y-3 min-h-[400px] sm:min-h-[500px] max-h-[70vh] overflow-y-auto transition-all duration-200 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent ${
+        className={`flex-1 glass rounded-b-xl p-2 sm:p-3 space-y-2 sm:space-y-3 min-h-[280px] sm:min-h-[320px] max-h-[50vh] overflow-y-auto transition-all duration-200 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent ${
           isOver ? 'bg-white/[0.06] scale-[1.02]' : ''
         }`}
       >
