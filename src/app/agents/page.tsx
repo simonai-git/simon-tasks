@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -191,28 +191,59 @@ export default function AgentsPage() {
     <div className="p-3 sm:p-6 lg:p-8 max-w-[1600px] mx-auto">
       {/* Header */}
       <div className="glass rounded-2xl p-4 sm:p-6 mb-4 sm:mb-8 animate-fade-in">
+        {/* Row 1: Title left, User info right */}
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <div className="flex items-center gap-3">
-              <Link href="/" className="text-white/50 hover:text-white transition-colors">
-                ← Back
-              </Link>
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold gradient-text truncate">
-                AI Agent Team
-              </h1>
-            </div>
-            <p className="text-white/50 text-xs sm:text-sm hidden md:block mt-1">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold gradient-text truncate">
+              AI Agent Team
+            </h1>
+            <p className="text-white/50 text-xs sm:text-sm hidden md:block">
               Create and manage specialized AI agents for your team
             </p>
           </div>
           
-          <button
-            onClick={openCreateModal}
-            className="group flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg sm:rounded-xl font-medium hover:shadow-lg hover:shadow-purple-500/25 hover:scale-105 active:scale-95 text-xs sm:text-sm"
-          >
-            <span className="text-base sm:text-lg group-hover:rotate-90 transition-transform duration-200">+</span>
-            <span>New Agent</span>
-          </button>
+          {/* User info */}
+          {session?.user && (
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {session.user.image && (
+                <img src={session.user.image} alt="" className="w-6 h-6 sm:w-8 sm:h-8 rounded-full" />
+              )}
+              <button
+                onClick={() => signOut()}
+                className="text-white/40 hover:text-white/70 text-xs transition-colors hidden sm:block"
+              >
+                Sign out
+              </button>
+            </div>
+          )}
+        </div>
+        
+        {/* Row 2: Navigation + Actions */}
+        <div className="flex items-center justify-between gap-3 mt-4 pt-4 border-t border-white/10">
+          <div className="flex items-center gap-2">
+            {/* Back to Tasks */}
+            <Link
+              href="/"
+              className="group flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 bg-white/10 text-white rounded-lg sm:rounded-xl font-medium hover:bg-white/20 hover:scale-105 active:scale-95 text-xs sm:text-sm transition-all border border-white/10"
+            >
+              <span className="text-base sm:text-lg">📋</span>
+              <span className="hidden sm:inline">Tasks</span>
+            </Link>
+            
+            {/* New Agent Button */}
+            <button
+              onClick={openCreateModal}
+              className="group flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg sm:rounded-xl font-medium hover:shadow-lg hover:shadow-purple-500/25 hover:scale-105 active:scale-95 text-xs sm:text-sm"
+            >
+              <span className="text-base sm:text-lg group-hover:rotate-90 transition-transform duration-200">+</span>
+              <span className="hidden sm:inline">New Agent</span>
+            </button>
+          </div>
+          
+          {/* Agent count */}
+          <div className="text-white/50 text-sm">
+            <span className="font-medium text-white">{agents.filter(a => a.is_active).length}</span> active agents
+          </div>
         </div>
       </div>
 
