@@ -19,10 +19,18 @@ const priorityConfig = {
   high: { color: 'bg-red-500/20 text-red-400 border-red-500/30', dot: 'bg-red-400' },
 };
 
-const assigneeConfig = {
+const assigneeConfig: Record<string, { color: string; emoji: string }> = {
   Bogdan: { color: 'from-blue-500 to-cyan-500', emoji: '👤' },
-  Simon: { color: 'from-purple-500 to-pink-500', emoji: '🦊' },
+  Simon: { color: 'from-orange-500 to-amber-500', emoji: '🦊' },
+  Sam: { color: 'from-purple-500 to-pink-500', emoji: '📋' },
+  Casey: { color: 'from-cyan-500 to-blue-500', emoji: '🎨' },
+  Riley: { color: 'from-emerald-500 to-teal-500', emoji: '⚙️' },
+  Jordan: { color: 'from-violet-500 to-purple-500', emoji: '🔧' },
+  Morgan: { color: 'from-rose-500 to-pink-500', emoji: '🤖' },
+  Alex: { color: 'from-amber-500 to-orange-500', emoji: '🧪' },
 };
+
+const defaultAssignee = { color: 'from-slate-500 to-slate-600', emoji: '🤖' };
 
 // Compare due date (YYYY-MM-DD string) against today in local time
 function isDateOverdue(dueDateStr: string): boolean {
@@ -66,7 +74,7 @@ export default function TaskCard({ task, onEdit, onDelete, onView, isActive = fa
   };
 
   const priority = priorityConfig[task.priority];
-  const assignee = assigneeConfig[task.assignee];
+  const assignee = assigneeConfig[task.assignee] || defaultAssignee;
   const progress = task.progress || 0;
 
   return (
