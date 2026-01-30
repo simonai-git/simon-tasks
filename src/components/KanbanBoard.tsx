@@ -236,41 +236,25 @@ export default function KanbanBoard() {
     <div className="p-3 sm:p-6 lg:p-8 max-w-[1600px] mx-auto">
       {/* Header */}
       <div className="glass rounded-2xl p-4 sm:p-6 mb-4 sm:mb-8 animate-fade-in">
-        <div className="flex flex-col gap-4">
-          {/* Title row */}
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <h1 className="text-xl sm:text-3xl font-bold gradient-text mb-1 truncate">
-                Simon Task Tracker
-              </h1>
-              <p className="text-white/50 text-xs sm:text-sm hidden sm:block">
-                Drag tasks between columns to update their status
-              </p>
-            </div>
-            
-            {/* User info - top right on mobile */}
-            {session?.user && (
-              <div className="flex items-center gap-2 sm:hidden flex-shrink-0">
-                {session.user.image && (
-                  <img src={session.user.image} alt="" className="w-7 h-7 rounded-full" />
-                )}
-                <button
-                  onClick={() => signOut()}
-                  className="text-white/40 hover:text-white/70 text-xs transition-colors"
-                >
-                  Sign out
-                </button>
-              </div>
-            )}
+        {/* Single row header with title left, actions right */}
+        <div className="flex items-center justify-between gap-3">
+          {/* Title */}
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold gradient-text truncate">
+              Simon Task Tracker
+            </h1>
+            <p className="text-white/50 text-xs sm:text-sm hidden md:block">
+              Drag tasks between columns to update their status
+            </p>
           </div>
           
-          {/* Action buttons row */}
-          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+          {/* Action buttons - right side */}
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             {/* Watcher Toggle */}
             <button
               onClick={toggleWatcher}
               disabled={togglingWatcher}
-              className={`group flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-medium transition-all text-sm ${
+              className={`group flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl font-medium transition-all text-xs sm:text-sm ${
                 watcherConfig?.is_running
                   ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30'
                   : 'bg-white/5 text-white/50 border border-white/10 hover:bg-white/10 hover:text-white/70'
@@ -278,46 +262,41 @@ export default function KanbanBoard() {
               title={watcherConfig?.is_running ? 'Watcher is running - click to pause' : 'Watcher is paused - click to start'}
             >
               {togglingWatcher ? (
-                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
               ) : watcherConfig?.is_running ? (
                 <>
-                  <span className="relative flex h-3 w-3">
+                  <span className="relative flex h-2.5 w-2.5 sm:h-3 sm:w-3">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 sm:h-3 sm:w-3 bg-emerald-500"></span>
                   </span>
-                  <span className="hidden xs:inline">Watcher Active</span>
-                  <span className="xs:hidden">Active</span>
+                  <span className="hidden sm:inline">Watcher</span>
                 </>
               ) : (
                 <>
-                  <span className="w-3 h-3 rounded-full bg-white/30"></span>
-                  <span className="hidden xs:inline">Watcher Paused</span>
-                  <span className="xs:hidden">Paused</span>
+                  <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-white/30"></span>
+                  <span className="hidden sm:inline">Paused</span>
                 </>
               )}
             </button>
             
+            {/* New Task Button */}
             <button
               onClick={openCreateModal}
-              className="group flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-purple-500/25 hover:scale-105 active:scale-95 text-sm sm:text-base"
+              className="group flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg sm:rounded-xl font-medium hover:shadow-lg hover:shadow-purple-500/25 hover:scale-105 active:scale-95 text-xs sm:text-sm"
             >
-              <span className="text-lg group-hover:rotate-90 transition-transform duration-200">+</span>
-              <span className="hidden xs:inline">New Task</span>
-              <span className="xs:hidden">New</span>
+              <span className="text-base sm:text-lg group-hover:rotate-90 transition-transform duration-200">+</span>
+              <span className="hidden sm:inline">New Task</span>
             </button>
             
-            {/* User info - desktop only */}
+            {/* User info */}
             {session?.user && (
-              <div className="hidden sm:flex items-center gap-3 ml-auto">
-                <div className="flex items-center gap-2">
-                  {session.user.image && (
-                    <img src={session.user.image} alt="" className="w-8 h-8 rounded-full" />
-                  )}
-                  <span className="text-white/60 text-sm hidden md:inline">{session.user.email}</span>
-                </div>
+              <div className="flex items-center gap-2 ml-1 sm:ml-2">
+                {session.user.image && (
+                  <img src={session.user.image} alt="" className="w-6 h-6 sm:w-8 sm:h-8 rounded-full" />
+                )}
                 <button
                   onClick={() => signOut()}
-                  className="text-white/40 hover:text-white/70 text-sm transition-colors"
+                  className="text-white/40 hover:text-white/70 text-xs transition-colors hidden sm:block"
                 >
                   Sign out
                 </button>
