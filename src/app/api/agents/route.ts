@@ -1,20 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllAgents, getActiveAgents, createAgent, Agent } from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
-
-// API key from environment
-const API_KEY = process.env.SIMON_API_KEY;
-
-function checkAuth(request: NextRequest): boolean {
-  const apiKey = request.headers.get('x-api-key');
-  return apiKey === API_KEY;
-}
+import { getServerSession } from 'next-auth';
 
 // GET /api/agents - Get all agents
 export async function GET(request: NextRequest) {
-  if (!checkAuth(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
 
   try {
     const activeOnly = request.nextUrl.searchParams.get('active') === 'true';
@@ -28,10 +18,6 @@ export async function GET(request: NextRequest) {
 
 // POST /api/agents - Create a new agent
 export async function POST(request: NextRequest) {
-  if (!checkAuth(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   try {
     const body = await request.json();
     

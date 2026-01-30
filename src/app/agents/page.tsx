@@ -78,9 +78,7 @@ export default function AgentsPage() {
 
   const fetchAgents = async () => {
     try {
-      const res = await fetch('/api/agents', {
-        headers: { 'x-api-key': process.env.NEXT_PUBLIC_API_KEY || '' },
-      });
+      const res = await fetch('/api/agents');
       if (res.ok) {
         const data = await res.json();
         setAgents(data);
@@ -103,7 +101,6 @@ export default function AgentsPage() {
         method,
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': process.env.NEXT_PUBLIC_API_KEY || '',
         },
         body: JSON.stringify(formData),
       });
@@ -127,7 +124,6 @@ export default function AgentsPage() {
     try {
       const res = await fetch(`/api/agents/${id}`, {
         method: 'DELETE',
-        headers: { 'x-api-key': process.env.NEXT_PUBLIC_API_KEY || '' },
       });
 
       if (res.ok) {

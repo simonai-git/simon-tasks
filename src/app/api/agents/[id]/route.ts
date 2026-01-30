@@ -1,23 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAgent, updateAgent, deleteAgent } from '@/lib/db';
 
-// API key from environment
-const API_KEY = process.env.SIMON_API_KEY;
-
-function checkAuth(request: NextRequest): boolean {
-  const apiKey = request.headers.get('x-api-key');
-  return apiKey === API_KEY;
-}
-
 // GET /api/agents/[id] - Get a specific agent
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  if (!checkAuth(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   try {
     const { id } = await params;
     const agent = await getAgent(id);
@@ -38,10 +26,6 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  if (!checkAuth(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   try {
     const { id } = await params;
     const body = await request.json();
@@ -67,10 +51,6 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  if (!checkAuth(request)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   try {
     const { id } = await params;
     
