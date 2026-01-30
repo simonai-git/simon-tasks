@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Task } from '@/lib/db';
@@ -38,6 +39,18 @@ function isDateOverdue(dueDateStr: string): boolean {
 }
 
 export default function TaskCard({ task, onEdit, onDelete, onView, isActive = false }: TaskCardProps) {
+  // Defer overdue check to client-side only to avoid hydration mismatch
+  // (server runs in UTC, client runs in user's local time)
+  const [isOverdue, setIsOverdue] = useState(false);
+  
+  useEffect(() => {
+    if (task.due_date && task.status !== 'done') {
+      setIsOverdue(isDateOverdue(task.due_date));
+    } else {
+      setIsOverdue(false);
+    }
+  }, [task.due_date, task.status]);
+
   const {
     attributes,
     listeners,
@@ -54,7 +67,6 @@ export default function TaskCard({ task, onEdit, onDelete, onView, isActive = fa
 
   const priority = priorityConfig[task.priority];
   const assignee = assigneeConfig[task.assignee];
-  const isOverdue = task.due_date && isDateOverdue(task.due_date) && task.status !== 'done';
   const progress = task.progress || 0;
 
   return (
@@ -112,6 +124,9 @@ export default function TaskCard({ task, onEdit, onDelete, onView, isActive = fa
           </svg>
         </button>
       </div>
+
+      {/* Task ID */}
+      <div className="text-[10px] text-white/30 font-mono mb-1">#{task.id.slice(0, 8)}</div>
 
       {/* Title with badges */}
       <div className="flex items-start gap-2 pr-20 sm:pr-16 mb-2">

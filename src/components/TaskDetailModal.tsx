@@ -76,6 +76,17 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
   const [loadingComments, setLoadingComments] = useState(false);
   const [submittingComment, setSubmittingComment] = useState(false);
   const [activeTab, setActiveTab] = useState<'details' | 'activity' | 'agent_context'>('details');
+  // Defer overdue check to client-side only to avoid hydration mismatch
+  // (server runs in UTC, client runs in user's local time)
+  const [isOverdue, setIsOverdue] = useState(false);
+  
+  useEffect(() => {
+    if (task?.due_date && task.status !== 'done') {
+      setIsOverdue(isDateOverdue(task.due_date));
+    } else {
+      setIsOverdue(false);
+    }
+  }, [task?.due_date, task?.status]);
 
   useEffect(() => {
     if (task && isOpen) {
@@ -151,7 +162,6 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
 
   const status = statusConfig[task.status];
   const priority = priorityConfig[task.priority];
-  const isOverdue = task.due_date && isDateOverdue(task.due_date) && task.status !== 'done';
 
   return (
     <div className="fixed inset-0 modal-backdrop flex items-end sm:items-center justify-center z-50 p-0 sm:p-4" onClick={onClose}>
@@ -162,6 +172,7 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
         {/* Header */}
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-white/10 flex items-start justify-between gap-3 sm:gap-4">
           <div className="flex-1 min-w-0">
+            <div className="text-[10px] text-white/40 font-mono mb-1">Task #{task.id.slice(0, 8)}</div>
             <div className="flex items-start sm:items-center gap-2 flex-wrap">
               <h2 className="text-lg sm:text-xl font-semibold text-white">{task.title}</h2>
               <div className="flex items-center gap-1.5 flex-wrap">
