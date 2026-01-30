@@ -24,10 +24,13 @@ export async function PATCH(
       return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     }
     
-    // Auto-assign to Bogdan when moving to in_review
-    if (body.status === 'in_review') {
+    // Auto-assign based on status transition
+    if (body.status === 'todo' || body.status === 'in_progress') {
+      body.assignee = 'Simon';
+    } else if (body.status === 'in_review') {
       body.assignee = 'Bogdan';
     }
+    // status === 'done' → keep current assignee (no change)
     
     const task = await updateTask(id, body);
     if (!task) {
