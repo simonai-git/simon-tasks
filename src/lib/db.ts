@@ -168,6 +168,17 @@ async function initDb() {
       END $$;
     `);
     
+    // Create indexes for better query performance
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
+      CREATE INDEX IF NOT EXISTS idx_tasks_assignee ON tasks(assignee);
+      CREATE INDEX IF NOT EXISTS idx_tasks_project_id ON tasks(project_id);
+      CREATE INDEX IF NOT EXISTS idx_tasks_updated_at ON tasks(updated_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_tasks_status_assignee ON tasks(status, assignee);
+      CREATE INDEX IF NOT EXISTS idx_comments_task_id ON comments(task_id);
+      CREATE INDEX IF NOT EXISTS idx_activity_task_id ON activity_log(task_id);
+    `);
+    
     console.log('Database initialized');
   } finally {
     client.release();
@@ -197,7 +208,15 @@ export interface Task {
 }
 
 export async function getAllTasks(): Promise<Task[]> {
-  const result = await pool.query('SELECT * FROM tasks ORDER BY created_at DESC');
+  // Exclude agent_context from list view for performance (can be very large)
+  const result = await pool.query(`
+    SELECT id, title, description, status, assignee, priority, due_date, 
+           estimated_hours, time_spent, progress, is_blocked, blocked_reason,
+           created_at, updated_at, project_id,
+           CASE WHEN agent_context IS NOT NULL THEN 'has_context' ELSE NULL END as agent_context
+    FROM tasks 
+    ORDER BY updated_at DESC
+  `);
   return result.rows;
 }
 

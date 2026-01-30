@@ -6,7 +6,11 @@ import { v4 as uuidv4 } from 'uuid';
 export async function GET() {
   try {
     const tasks = await getAllTasks();
-    return NextResponse.json(tasks);
+    return NextResponse.json(tasks, {
+      headers: {
+        'Cache-Control': 'private, max-age=5, stale-while-revalidate=10',
+      },
+    });
   } catch (error) {
     console.error('Error fetching tasks:', error);
     return NextResponse.json({ error: 'Failed to fetch tasks' }, { status: 500 });
