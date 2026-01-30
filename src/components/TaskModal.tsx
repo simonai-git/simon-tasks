@@ -3,6 +3,15 @@
 import { useState, useEffect } from 'react';
 import { Task } from '@/lib/db';
 
+interface Agent {
+  id: string;
+  name: string;
+  specialization: string;
+  avatar_emoji: string;
+  avatar_color: string;
+  is_active: boolean;
+}
+
 interface TaskModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -22,9 +31,36 @@ function getTodayString(): string {
 export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [assignee, setAssignee] = useState<'Bogdan' | 'Simon'>('Simon');
+  const [assignee, setAssignee] = useState('Simon');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [dueDate, setDueDate] = useState('');
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [loadingAgents, setLoadingAgents] = useState(true);
+
+  // Fetch agents
+  useEffect(() => {
+    const fetchAgents = async () => {
+      try {
+        const res = await fetch('/api/agents?active=true', {
+          headers: { 'x-api-key': process.env.NEXT_PUBLIC_API_KEY || '' },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setAgents(data);
+        }
+      } catch (error) {
+        console.error('Error fetching agents:', error);
+        // Fallback to default agents
+        setAgents([
+          { id: 'agent-simon', name: 'Simon', specialization: 'Full Stack Developer', avatar_emoji: '🦊', avatar_color: 'from-orange-500 to-amber-500', is_active: true },
+          { id: 'agent-bogdan', name: 'Bogdan', specialization: 'Project Manager', avatar_emoji: '👤', avatar_color: 'from-blue-500 to-purple-500', is_active: true },
+        ]);
+      } finally {
+        setLoadingAgents(false);
+      }
+    };
+    fetchAgents();
+  }, []);
 
   useEffect(() => {
     if (task) {
@@ -50,12 +86,14 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
       ...(task?.id && { id: task.id }),
       title,
       description: description || null,
-      assignee,
+      assignee: assignee as any,
       priority,
       due_date: dueDate || null,
     });
     onClose();
   };
+
+  const selectedAgent = agents.find(a => a.name === assignee) || agents[0];
 
   return (
     <div className="fixed inset-0 modal-backdrop flex items-end sm:items-center justify-center z-50 p-0 sm:p-4" onClick={onClose}>
@@ -109,64 +147,66 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
             />
           </div>
           
-          {/* Assignee & Priority */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-white/70 mb-2">
-                Assignee
-              </label>
+          {/* Assignee */}
+          <div>
+            <label className="block text-sm font-medium text-white/70 mb-2">
+              Assign to Agent
+            </label>
+            {loadingAgents ? (
               <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setAssignee('Simon')}
-                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border transition-all ${
-                    assignee === 'Simon' 
-                      ? 'bg-purple-500/20 border-purple-500/50 text-purple-300' 
-                      : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'
-                  }`}
-                >
-                  <span>🦊</span>
-                  <span className="text-sm font-medium">Simon</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAssignee('Bogdan')}
-                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border transition-all ${
-                    assignee === 'Bogdan' 
-                      ? 'bg-blue-500/20 border-blue-500/50 text-blue-300' 
-                      : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'
-                  }`}
-                >
-                  <span>👤</span>
-                  <span className="text-sm font-medium">Bogdan</span>
-                </button>
+                <div className="flex-1 h-12 bg-white/5 rounded-xl animate-pulse" />
+                <div className="flex-1 h-12 bg-white/5 rounded-xl animate-pulse" />
               </div>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-white/70 mb-2">
-                Priority
-              </label>
-              <div className="flex gap-1">
-                {(['low', 'medium', 'high'] as const).map((p) => (
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {agents.map((agent) => (
                   <button
-                    key={p}
+                    key={agent.id}
                     type="button"
-                    onClick={() => setPriority(p)}
-                    className={`flex-1 px-2 py-2.5 rounded-xl border text-sm font-medium transition-all ${
-                      priority === p
-                        ? p === 'low' 
-                          ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
-                          : p === 'medium'
-                          ? 'bg-amber-500/20 border-amber-500/50 text-amber-300'
-                          : 'bg-red-500/20 border-red-500/50 text-red-300'
+                    onClick={() => setAssignee(agent.name)}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all ${
+                      assignee === agent.name
+                        ? 'bg-purple-500/20 border-purple-500/50 text-purple-300'
                         : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'
                     }`}
                   >
-                    {p === 'low' ? '🟢' : p === 'medium' ? '🟡' : '🔴'}
+                    <span className={`w-6 h-6 rounded-lg bg-gradient-to-br ${agent.avatar_color} flex items-center justify-center text-sm`}>
+                      {agent.avatar_emoji}
+                    </span>
+                    <span className="text-sm font-medium">{agent.name}</span>
                   </button>
                 ))}
               </div>
+            )}
+            {selectedAgent && (
+              <p className="text-xs text-white/40 mt-1.5">{selectedAgent.specialization}</p>
+            )}
+          </div>
+          
+          {/* Priority */}
+          <div>
+            <label className="block text-sm font-medium text-white/70 mb-2">
+              Priority
+            </label>
+            <div className="flex gap-1">
+              {(['low', 'medium', 'high'] as const).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setPriority(p)}
+                  className={`flex-1 px-2 py-2.5 rounded-xl border text-sm font-medium transition-all ${
+                    priority === p
+                      ? p === 'low' 
+                        ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
+                        : p === 'medium'
+                        ? 'bg-amber-500/20 border-amber-500/50 text-amber-300'
+                        : 'bg-red-500/20 border-red-500/50 text-red-300'
+                      : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'
+                  }`}
+                >
+                  {p === 'low' ? '🟢 Low' : p === 'medium' ? '🟡 Med' : '🔴 High'}
+                </button>
+              ))}
             </div>
           </div>
           
@@ -180,12 +220,12 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                className="flex-1 px-4 py-2.5 bg-black/30 border border-white/10 rounded-xl text-white focus:border-blue-500/50 focus:bg-black/40 focus:ring-2 focus:ring-blue-500/20 [color-scheme:dark]"
+                className="flex-1 px-4 py-2.5 bg-black/30 border border-white/10 rounded-xl text-white focus:border-blue-500/50 focus:bg-black/40 focus:ring-2 focus:ring-blue-500/20"
               />
               <button
                 type="button"
                 onClick={() => setDueDate(getTodayString())}
-                className="px-3 py-2.5 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 border border-blue-500/30 rounded-xl transition-all text-sm font-medium"
+                className="px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white/70 hover:bg-white/10 hover:text-white transition-all text-sm"
               >
                 Today
               </button>
@@ -193,7 +233,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
                 <button
                   type="button"
                   onClick={() => setDueDate('')}
-                  className="px-3 py-2.5 text-white/50 hover:text-white/80 hover:bg-white/10 rounded-xl transition-all text-sm"
+                  className="px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white/50 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30 transition-all text-sm"
                 >
                   Clear
                 </button>
@@ -206,13 +246,13 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 text-white/70 hover:text-white hover:bg-white/10 rounded-xl transition-all font-medium"
+              className="flex-1 px-4 py-2.5 bg-white/5 border border-white/10 text-white/70 rounded-xl hover:bg-white/10 hover:text-white transition-all font-medium"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-purple-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all"
+              className="flex-1 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:shadow-lg hover:shadow-purple-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all font-medium"
             >
               {task ? 'Save Changes' : 'Create Task'}
             </button>
