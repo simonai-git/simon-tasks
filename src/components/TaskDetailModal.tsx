@@ -446,6 +446,30 @@ function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDelete, isActive =
                 </div>
               </div>
 
+              {/* Contributors (who worked on this task) */}
+              {(() => {
+                const workedBy: string[] = task.worked_by ? JSON.parse(task.worked_by) : [];
+                if (workedBy.length === 0) return null;
+                return (
+                  <div>
+                    <label className="block text-xs sm:text-sm font-medium text-white/70 mb-2 sm:mb-3">
+                      💪 Contributors
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {workedBy.map((contributor) => (
+                        <span
+                          key={contributor}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs sm:text-sm"
+                        >
+                          <span>✓</span>
+                          {contributor}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* Description */}
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-white/70 mb-1.5 sm:mb-2">Description</label>

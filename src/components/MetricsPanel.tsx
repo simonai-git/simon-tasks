@@ -7,6 +7,8 @@ interface ReportData {
   by_status: Record<string, number>;
   by_priority: Record<string, number>;
   by_assignee: Record<string, number>;
+  by_contributor: Record<string, number>;
+  completed_by_contributor: Record<string, number>;
   completed_this_week: number;
   avg_cycle_time_hours: number;
   velocity_per_day: number;
@@ -129,7 +131,7 @@ export default function MetricsPanel() {
       {/* Expanded details */}
       {expanded && (
         <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-white/10 animate-fade-in">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {/* By Priority */}
             <div className="bg-white/5 rounded-xl p-4">
               <h3 className="text-sm font-medium text-white/70 mb-3 flex items-center gap-2">
@@ -151,7 +153,7 @@ export default function MetricsPanel() {
             {/* By Assignee */}
             <div className="bg-white/5 rounded-xl p-4">
               <h3 className="text-sm font-medium text-white/70 mb-3 flex items-center gap-2">
-                <span>👥</span> By Assignee
+                <span>👤</span> By Assignee
               </h3>
               <div className="space-y-2">
                 {Object.entries(data.by_assignee).map(([assignee, count]) => (
@@ -163,8 +165,34 @@ export default function MetricsPanel() {
               </div>
             </div>
 
+            {/* Work Distribution - Who did the work */}
+            <div className="bg-white/5 rounded-xl p-4">
+              <h3 className="text-sm font-medium text-white/70 mb-3 flex items-center gap-2">
+                <span>💪</span> Work Done
+              </h3>
+              <div className="space-y-2">
+                {Object.keys(data.by_contributor || {}).length > 0 ? (
+                  Object.entries(data.by_contributor)
+                    .sort(([, a], [, b]) => b - a) // Sort by count descending
+                    .map(([contributor, count]) => (
+                      <div key={contributor} className="flex items-center justify-between">
+                        <span className="text-white/80 text-sm">{contributor}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-white font-medium">{count}</span>
+                          <span className="text-emerald-400 text-xs">
+                            ({data.completed_by_contributor?.[contributor] || 0} ✓)
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                ) : (
+                  <div className="text-white/40 text-sm italic">No work tracked yet</div>
+                )}
+              </div>
+            </div>
+
             {/* Summary */}
-            <div className="bg-white/5 rounded-xl p-4 sm:col-span-2 lg:col-span-1">
+            <div className="bg-white/5 rounded-xl p-4">
               <h3 className="text-sm font-medium text-white/70 mb-3 flex items-center gap-2">
                 <span>📈</span> Summary
               </h3>

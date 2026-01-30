@@ -20,6 +20,8 @@ interface TaskMetrics {
   by_status: Record<string, number>;
   by_priority: Record<string, number>;
   by_assignee: Record<string, number>;
+  by_contributor: Record<string, number>; // Tasks worked on by each contributor
+  completed_by_contributor: Record<string, number>; // Completed tasks by contributor
   completed_this_week: number;
   avg_cycle_time_hours: number | null;
   velocity_per_day: number;
@@ -41,6 +43,8 @@ export async function GET() {
     const byStatus: Record<string, number> = {};
     const byPriority: Record<string, number> = {};
     const byAssignee: Record<string, number> = {};
+    const byContributor: Record<string, number> = {}; // All tasks worked on
+    const completedByContributor: Record<string, number> = {}; // Completed tasks
     
     let completedThisWeek = 0;
     let totalCycleTime = 0;
@@ -57,6 +61,15 @@ export async function GET() {
       
       // By assignee
       byAssignee[task.assignee] = (byAssignee[task.assignee] || 0) + 1;
+      
+      // By contributor (who worked on this task)
+      const workedBy: string[] = task.worked_by ? JSON.parse(task.worked_by) : [];
+      for (const contributor of workedBy) {
+        byContributor[contributor] = (byContributor[contributor] || 0) + 1;
+        if (task.status === 'done') {
+          completedByContributor[contributor] = (completedByContributor[contributor] || 0) + 1;
+        }
+      }
       
       // Completed this week
       if (task.status === 'done') {
@@ -96,6 +109,8 @@ export async function GET() {
       by_status: byStatus,
       by_priority: byPriority,
       by_assignee: byAssignee,
+      by_contributor: byContributor,
+      completed_by_contributor: completedByContributor,
       completed_this_week: completedThisWeek,
       avg_cycle_time_hours: avgCycleTime ? Math.round(avgCycleTime * 10) / 10 : null,
       velocity_per_day: Math.round(velocityPerDay * 10) / 10,

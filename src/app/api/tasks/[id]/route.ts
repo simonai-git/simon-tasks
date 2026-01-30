@@ -10,6 +10,15 @@ function isAuthorized(request: NextRequest): boolean {
   return authHeader === API_KEY && !!API_KEY;
 }
 
+// Add a contributor to the worked_by list if not already present
+function addContributor(workedByJson: string | null, contributor: string): string {
+  const workedBy: string[] = workedByJson ? JSON.parse(workedByJson) : [];
+  if (!workedBy.includes(contributor)) {
+    workedBy.push(contributor);
+  }
+  return JSON.stringify(workedBy);
+}
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -23,6 +32,9 @@ export async function PATCH(
     if (!oldTask) {
       return NextResponse.json({ error: 'Task not found' }, { status: 404 });
     }
+    
+    // Determine the actor making this change
+    const actor = isAuthorized(request) ? 'Simon' : 'Bogdan';
     
     // Get project reviewer (if task belongs to a project)
     let reviewer = 'Bogdan'; // default
@@ -43,6 +55,12 @@ export async function PATCH(
         body.assignee = 'Simon';
       }
       // done → keep current assignee
+      
+      // Track who worked on the task: add to worked_by when moving to in_progress, testing, or in_review (completed work)
+      if (['in_progress', 'testing', 'in_review'].includes(body.status)) {
+        // The actor is the one doing the work
+        body.worked_by = addContributor(oldTask.worked_by, actor);
+      }
     }
     
     const task = await updateTask(id, body);
@@ -51,7 +69,6 @@ export async function PATCH(
     }
     
     // Log activity for each changed field
-    const actor = isAuthorized(request) ? 'Simon' : 'Bogdan';
     for (const field of Object.keys(body)) {
       const oldValue = String(oldTask[field as keyof typeof oldTask] ?? '');
       const newValue = String(body[field] ?? '');

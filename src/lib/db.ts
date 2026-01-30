@@ -38,6 +38,7 @@ async function initDb() {
         ALTER TABLE tasks ADD COLUMN IF NOT EXISTS is_blocked BOOLEAN DEFAULT FALSE;
         ALTER TABLE tasks ADD COLUMN IF NOT EXISTS blocked_reason TEXT;
         ALTER TABLE tasks ADD COLUMN IF NOT EXISTS agent_context TEXT;
+        ALTER TABLE tasks ADD COLUMN IF NOT EXISTS worked_by TEXT DEFAULT '[]';
       EXCEPTION WHEN OTHERS THEN NULL;
       END $$;
     `);
@@ -241,6 +242,7 @@ export interface Task {
   blocked_reason: string | null;
   agent_context: string | null;
   project_id: string | null;
+  worked_by: string; // JSON array of contributors who worked on this task
   created_at: string;
   updated_at: string;
 }
@@ -250,7 +252,7 @@ export async function getAllTasks(): Promise<Task[]> {
   const result = await pool.query(`
     SELECT id, title, description, status, assignee, priority, due_date, 
            estimated_hours, time_spent, progress, is_blocked, blocked_reason,
-           created_at, updated_at, project_id,
+           created_at, updated_at, project_id, COALESCE(worked_by, '[]') as worked_by,
            CASE WHEN agent_context IS NOT NULL THEN 'has_context' ELSE NULL END as agent_context
     FROM tasks 
     ORDER BY updated_at DESC
