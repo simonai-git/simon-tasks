@@ -67,7 +67,7 @@ export default function Column({ id, title, icon, gradient, tasks, onEditTask, o
   }, [tasks.length]);
 
   return (
-    <div className="flex flex-col w-[85vw] sm:w-0 sm:flex-1 sm:min-w-0 min-w-[280px] flex-shrink-0 sm:flex-shrink">
+    <div className="flex flex-col w-[85vw] sm:w-0 sm:flex-1 min-w-[280px] sm:min-w-[200px] flex-shrink-0 sm:flex-shrink">
       {/* Column Header */}
       <div className={`bg-gradient-to-r ${gradient} rounded-t-xl px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between shadow-lg`}>
         <div className="flex items-center gap-2">
