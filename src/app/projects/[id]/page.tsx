@@ -16,6 +16,8 @@ interface Project {
   description: string | null;
   status: ProjectStatus;
   owner: string;
+  reviewer: string;
+  product_manager: string;
   prd: string | null;
   goals: string | null;
   requirements: string | null;
@@ -253,6 +255,30 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       }
     } catch (error) {
       console.error('Error updating feedback:', error);
+    }
+  };
+
+  const handleConvertToTask = async (feedbackId: string) => {
+    if (!confirm('Convert this feedback to a task?')) return;
+    
+    try {
+      const res = await fetch(`/api/projects/${id}/feedback/${feedbackId}/convert`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        alert(`Task created: ${data.task.title}`);
+        fetchFeedback();
+        fetchProject(); // Refresh tasks count
+      } else {
+        const error = await res.json();
+        alert(error.error || 'Failed to convert feedback to task');
+      }
+    } catch (error) {
+      console.error('Error converting feedback:', error);
     }
   };
 
@@ -609,13 +635,23 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                           </div>
                         </div>
                         <p className="text-white/70 text-sm whitespace-pre-wrap mb-3">{item.content}</p>
-                        <div className="flex items-center gap-4 text-xs text-white/40">
-                          <span>By {item.author}</span>
-                          <span>•</span>
-                          <span>{new Date(item.created_at).toLocaleDateString()}</span>
-                          <span className={`px-2 py-0.5 rounded ${typeConfig.color} bg-white/5`}>
-                            {typeConfig.label}
-                          </span>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4 text-xs text-white/40">
+                            <span>By {item.author}</span>
+                            <span>•</span>
+                            <span>{new Date(item.created_at).toLocaleDateString()}</span>
+                            <span className={`px-2 py-0.5 rounded ${typeConfig.color} bg-white/5`}>
+                              {typeConfig.label}
+                            </span>
+                          </div>
+                          {item.status === 'open' && (
+                            <button
+                              onClick={() => handleConvertToTask(item.id)}
+                              className="text-xs px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-lg hover:bg-emerald-500/30 transition-colors"
+                            >
+                              📋 Convert to Task
+                            </button>
+                          )}
                         </div>
                       </div>
                     );

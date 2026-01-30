@@ -14,6 +14,7 @@ interface Project {
   status: ProjectStatus;
   owner: string;
   reviewer: string;
+  product_manager: string;
   prd: string | null;
   goals: string | null;
   requirements: string | null;
@@ -53,6 +54,7 @@ export default function ProjectsPage() {
     description: '',
     owner: 'Bogdan',
     reviewer: 'Bogdan',
+    product_manager: 'Simon',
     prd: '',
     goals: '',
     requirements: '',
@@ -168,6 +170,7 @@ export default function ProjectsPage() {
       description: '',
       owner: 'Bogdan',
       reviewer: 'Bogdan',
+      product_manager: 'Simon',
       prd: '',
       goals: '',
       requirements: '',
@@ -187,6 +190,7 @@ export default function ProjectsPage() {
       description: project.description || '',
       owner: project.owner,
       reviewer: project.reviewer || 'Bogdan',
+      product_manager: project.product_manager || 'Simon',
       prd: project.prd || '',
       goals: project.goals || '',
       requirements: project.requirements || '',
@@ -549,6 +553,18 @@ export default function ProjectsPage() {
                         onChange={(e) => setFormData({ ...formData, reviewer: e.target.value })}
                         className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white placeholder-white/30 focus:outline-none focus:border-blue-500/50"
                         placeholder="Who reviews completed tasks"
+                      />
+                    </div>
+                    
+                    {/* Product Manager */}
+                    <div>
+                      <label className="block text-sm text-white/70 mb-1">Product Manager</label>
+                      <input
+                        type="text"
+                        value={formData.product_manager}
+                        onChange={(e) => setFormData({ ...formData, product_manager: e.target.value })}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white placeholder-white/30 focus:outline-none focus:border-blue-500/50"
+                        placeholder="Who monitors feedback & creates tasks"
                       />
                     </div>
                   </div>

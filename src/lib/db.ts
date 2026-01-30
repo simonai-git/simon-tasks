@@ -168,6 +168,15 @@ async function initDb() {
       END $$;
     `);
     
+    // Add product_manager to projects table (PM watches feedback and creates tasks)
+    await client.query(`
+      DO $$ 
+      BEGIN
+        ALTER TABLE projects ADD COLUMN IF NOT EXISTS product_manager TEXT DEFAULT 'Simon';
+      EXCEPTION WHEN OTHERS THEN NULL;
+      END $$;
+    `);
+    
     // Create project_feedback table for suggestions and improvements
     await client.query(`
       CREATE TABLE IF NOT EXISTS project_feedback (
@@ -185,6 +194,15 @@ async function initDb() {
     
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_project_feedback_project_id ON project_feedback(project_id);
+    `);
+    
+    // Add feedback_id to tasks to link back to feedback items
+    await client.query(`
+      DO $$ 
+      BEGIN
+        ALTER TABLE tasks ADD COLUMN IF NOT EXISTS feedback_id TEXT REFERENCES project_feedback(id) ON DELETE SET NULL;
+      EXCEPTION WHEN OTHERS THEN NULL;
+      END $$;
     `);
     
     // Create indexes for better query performance
@@ -219,6 +237,7 @@ export interface Task {
   time_spent: number;
   progress: number;
   is_blocked: boolean;
+  feedback_id: string | null;
   blocked_reason: string | null;
   agent_context: string | null;
   project_id: string | null;
@@ -251,8 +270,8 @@ export async function getTasksByStatus(status: string): Promise<Task[]> {
 
 export async function createTask(task: Partial<Task> & { id: string; title: string }): Promise<Task> {
   const result = await pool.query(
-    `INSERT INTO tasks (id, title, description, status, assignee, priority, due_date, estimated_hours, time_spent, progress, is_blocked, blocked_reason, agent_context, project_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+    `INSERT INTO tasks (id, title, description, status, assignee, priority, due_date, estimated_hours, time_spent, progress, is_blocked, blocked_reason, agent_context, project_id, feedback_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
      RETURNING *`,
     [
       task.id,
@@ -268,7 +287,8 @@ export async function createTask(task: Partial<Task> & { id: string; title: stri
       task.is_blocked || false,
       task.blocked_reason || null,
       task.agent_context || null,
-      task.project_id || null
+      task.project_id || null,
+      task.feedback_id || null
     ]
   );
   return result.rows[0];
@@ -498,6 +518,7 @@ export interface Project {
   status: ProjectStatus;
   owner: string;
   reviewer: string;  // Who reviews completed tasks (defaults to owner)
+  product_manager: string;  // PM watches feedback and creates tasks
   prd: string | null;
   goals: string | null;
   requirements: string | null;
