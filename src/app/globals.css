@@ -116,3 +116,44 @@ input:focus, textarea:focus, select:focus, button:focus {
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(8px);
 }
+
+/* Hide scrollbar but allow scrolling */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Touch manipulation for better mobile dragging */
+.touch-manipulation {
+  touch-action: manipulation;
+}
+
+/* Safe area padding for notched devices */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .modal-backdrop > div {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Mobile-first responsive utilities */
+@media (max-width: 480px) {
+  .xs\:inline {
+    display: inline;
+  }
+  .xs\:hidden {
+    display: none;
+  }
+}
+
+@media (min-width: 481px) {
+  .xs\:inline {
+    display: none;
+  }
+  .xs\:hidden {
+    display: inline;
+  }
+}

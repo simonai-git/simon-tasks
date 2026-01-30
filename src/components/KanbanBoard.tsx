@@ -233,24 +233,44 @@ export default function KanbanBoard() {
   }
 
   return (
-    <div className="p-6 lg:p-8 max-w-[1600px] mx-auto">
+    <div className="p-3 sm:p-6 lg:p-8 max-w-[1600px] mx-auto">
       {/* Header */}
-      <div className="glass rounded-2xl p-6 mb-8 animate-fade-in">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold gradient-text mb-1">
-              Simon Task Tracker
-            </h1>
-            <p className="text-white/50 text-sm">
-              Drag tasks between columns to update their status
-            </p>
+      <div className="glass rounded-2xl p-4 sm:p-6 mb-4 sm:mb-8 animate-fade-in">
+        <div className="flex flex-col gap-4">
+          {/* Title row */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl sm:text-3xl font-bold gradient-text mb-1 truncate">
+                Simon Task Tracker
+              </h1>
+              <p className="text-white/50 text-xs sm:text-sm hidden sm:block">
+                Drag tasks between columns to update their status
+              </p>
+            </div>
+            
+            {/* User info - top right on mobile */}
+            {session?.user && (
+              <div className="flex items-center gap-2 sm:hidden flex-shrink-0">
+                {session.user.image && (
+                  <img src={session.user.image} alt="" className="w-7 h-7 rounded-full" />
+                )}
+                <button
+                  onClick={() => signOut()}
+                  className="text-white/40 hover:text-white/70 text-xs transition-colors"
+                >
+                  Sign out
+                </button>
+              </div>
+            )}
           </div>
-          <div className="flex items-center gap-4">
+          
+          {/* Action buttons row */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
             {/* Watcher Toggle */}
             <button
               onClick={toggleWatcher}
               disabled={togglingWatcher}
-              className={`group flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all ${
+              className={`group flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-medium transition-all text-sm ${
                 watcherConfig?.is_running
                   ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30'
                   : 'bg-white/5 text-white/50 border border-white/10 hover:bg-white/10 hover:text-white/70'
@@ -265,31 +285,35 @@ export default function KanbanBoard() {
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
                   </span>
-                  <span className="text-sm">Watcher Active</span>
+                  <span className="hidden xs:inline">Watcher Active</span>
+                  <span className="xs:hidden">Active</span>
                 </>
               ) : (
                 <>
                   <span className="w-3 h-3 rounded-full bg-white/30"></span>
-                  <span className="text-sm">Watcher Paused</span>
+                  <span className="hidden xs:inline">Watcher Paused</span>
+                  <span className="xs:hidden">Paused</span>
                 </>
               )}
             </button>
             
             <button
               onClick={openCreateModal}
-              className="group flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-purple-500/25 hover:scale-105 active:scale-95"
+              className="group flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-purple-500/25 hover:scale-105 active:scale-95 text-sm sm:text-base"
             >
               <span className="text-lg group-hover:rotate-90 transition-transform duration-200">+</span>
-              New Task
+              <span className="hidden xs:inline">New Task</span>
+              <span className="xs:hidden">New</span>
             </button>
             
+            {/* User info - desktop only */}
             {session?.user && (
-              <div className="flex items-center gap-3">
+              <div className="hidden sm:flex items-center gap-3 ml-auto">
                 <div className="flex items-center gap-2">
                   {session.user.image && (
                     <img src={session.user.image} alt="" className="w-8 h-8 rounded-full" />
                   )}
-                  <span className="text-white/60 text-sm hidden sm:inline">{session.user.email}</span>
+                  <span className="text-white/60 text-sm hidden md:inline">{session.user.email}</span>
                 </div>
                 <button
                   onClick={() => signOut()}
@@ -302,22 +326,22 @@ export default function KanbanBoard() {
           </div>
         </div>
         
-        {/* Stats */}
-        <div className="flex gap-6 mt-6 pt-6 border-t border-white/10">
+        {/* Stats - horizontal scroll on mobile */}
+        <div className="flex gap-3 sm:gap-6 mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-white/10 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
           {columns.map((col) => {
             const count = tasks.filter(t => t.status === col.id).length;
             return (
-              <div key={col.id} className="flex items-center gap-2">
-                <span className="text-lg">{col.icon}</span>
-                <span className="text-white/70 text-sm">{col.title}:</span>
-                <span className="text-white font-semibold">{count}</span>
+              <div key={col.id} className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                <span className="text-base sm:text-lg">{col.icon}</span>
+                <span className="text-white/70 text-xs sm:text-sm whitespace-nowrap">{col.title}:</span>
+                <span className="text-white font-semibold text-sm sm:text-base">{count}</span>
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* Board */}
+      {/* Board - horizontal scroll with snap on mobile */}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
@@ -325,9 +349,9 @@ export default function KanbanBoard() {
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex gap-6 overflow-x-auto pb-4">
+        <div className="flex gap-3 sm:gap-6 overflow-x-auto pb-4 -mx-3 px-3 sm:mx-0 sm:px-0 snap-x snap-mandatory sm:snap-none scrollbar-hide">
           {columns.map((column, index) => (
-            <div key={column.id} className="animate-fade-in" style={{ animationDelay: `${index * 100}ms` }}>
+            <div key={column.id} className="animate-fade-in snap-start" style={{ animationDelay: `${index * 100}ms` }}>
               <Column
                 id={column.id}
                 title={column.title}

@@ -49,19 +49,19 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
   };
 
   return (
-    <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 modal-backdrop flex items-end sm:items-center justify-center z-50 p-0 sm:p-4" onClick={onClose}>
       <div 
-        className="bg-[#1e1e2f]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-black/50 w-full max-w-md animate-slide-up"
+        className="bg-[#1e1e2f]/95 backdrop-blur-xl border border-white/10 rounded-t-2xl sm:rounded-2xl shadow-2xl shadow-black/50 w-full sm:max-w-md animate-slide-up max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-white/10 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-white">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-white/10 flex items-center justify-between sticky top-0 bg-[#1e1e2f]/95 backdrop-blur-xl z-10">
+          <h2 className="text-lg sm:text-xl font-semibold text-white">
             {task ? '✏️ Edit Task' : '✨ New Task'}
           </h2>
           <button 
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition-colors"
+            className="p-2 sm:p-1.5 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -70,7 +70,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
         </div>
         
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-5">
           {/* Title */}
           <div>
             <label className="block text-sm font-medium text-white/70 mb-2">
@@ -101,7 +101,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
           </div>
           
           {/* Assignee & Priority */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-white/70 mb-2">
                 Assignee
