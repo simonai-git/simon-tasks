@@ -17,6 +17,7 @@ import { Task } from '@/lib/db';
 import Column from './Column';
 import TaskModal from './TaskModal';
 import TaskDetailModal from './TaskDetailModal';
+import MetricsPanel from './MetricsPanel';
 
 const columns = [
   { id: 'todo', title: 'To Do', icon: '📋', gradient: 'from-slate-500 to-slate-600' },
@@ -341,6 +342,9 @@ export default function KanbanBoard() {
           ))}
         </div>
       </DndContext>
+
+      {/* Metrics Panel */}
+      <MetricsPanel />
 
       <TaskModal
         isOpen={isModalOpen}
