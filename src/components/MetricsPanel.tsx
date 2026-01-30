@@ -103,40 +103,28 @@ export default function MetricsPanel() {
   };
 
   return (
-    <div className="glass rounded-2xl p-4 sm:p-6 mt-4 sm:mt-8 animate-fade-in">
-      {/* Header with toggle */}
+    <div className="glass rounded-xl p-2 sm:p-3 mt-4 sm:mt-6 animate-fade-in">
+      {/* Compact metrics bar */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between mb-4 group"
+        className="w-full flex items-center justify-between gap-2 sm:gap-4"
       >
-        <div className="flex items-center gap-2">
-          <span className="text-lg">📊</span>
-          <h2 className="text-lg sm:text-xl font-semibold text-white/90">Metrics</h2>
+        <div className="flex items-center gap-3 sm:gap-6 overflow-x-auto scrollbar-hide">
+          {metrics.map((metric) => (
+            <div
+              key={metric.label}
+              className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0"
+            >
+              <span className="text-sm sm:text-base">{metric.icon}</span>
+              <span className="text-sm sm:text-base font-semibold text-white">{metric.value}</span>
+              <span className="text-xs text-white/50 hidden sm:inline">{metric.label}</span>
+            </div>
+          ))}
         </div>
-        <span className={`text-white/50 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}>
+        <span className={`text-white/40 text-xs transition-transform duration-200 flex-shrink-0 ${expanded ? 'rotate-180' : ''}`}>
           ▼
         </span>
       </button>
-
-      {/* Primary metrics - always visible */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {metrics.map((metric, index) => (
-          <div
-            key={metric.label}
-            className={`relative overflow-hidden rounded-xl p-3 sm:p-4 bg-gradient-to-br ${metric.gradient} border ${metric.border} transition-all hover:scale-[1.02]`}
-            style={{ animationDelay: `${index * 50}ms` }}
-          >
-            <div className="flex items-start justify-between mb-2">
-              <span className="text-2xl">{metric.icon}</span>
-            </div>
-            <div className="text-2xl sm:text-3xl font-bold text-white mb-0.5">
-              {metric.value}
-            </div>
-            <div className="text-xs sm:text-sm text-white/60">{metric.label}</div>
-            <div className="text-[10px] sm:text-xs text-white/40 mt-0.5">{metric.subtext}</div>
-          </div>
-        ))}
-      </div>
 
       {/* Expanded details */}
       {expanded && (
