@@ -168,6 +168,25 @@ async function initDb() {
       END $$;
     `);
     
+    // Create project_feedback table for suggestions and improvements
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS project_feedback (
+        id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+        author TEXT NOT NULL,
+        type TEXT NOT NULL DEFAULT 'suggestion',
+        title TEXT NOT NULL,
+        content TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'open',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_project_feedback_project_id ON project_feedback(project_id);
+    `);
+    
     // Create indexes for better query performance
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
@@ -651,6 +670,68 @@ export async function completeProject(id: string): Promise<Project | null> {
     [id]
   );
   return result.rows[0] || null;
+}
+
+// Project Feedback
+export type FeedbackType = 'suggestion' | 'improvement' | 'bug' | 'feature' | 'question';
+export type FeedbackStatus = 'open' | 'acknowledged' | 'in_progress' | 'resolved' | 'wont_fix';
+
+export interface ProjectFeedback {
+  id: string;
+  project_id: string;
+  author: string;
+  type: FeedbackType;
+  title: string;
+  content: string;
+  status: FeedbackStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function getProjectFeedback(projectId: string): Promise<ProjectFeedback[]> {
+  const result = await pool.query(
+    'SELECT * FROM project_feedback WHERE project_id = $1 ORDER BY created_at DESC',
+    [projectId]
+  );
+  return result.rows;
+}
+
+export async function createProjectFeedback(feedback: Omit<ProjectFeedback, 'created_at' | 'updated_at'>): Promise<ProjectFeedback> {
+  const result = await pool.query(
+    `INSERT INTO project_feedback (id, project_id, author, type, title, content, status)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     RETURNING *`,
+    [
+      feedback.id,
+      feedback.project_id,
+      feedback.author,
+      feedback.type || 'suggestion',
+      feedback.title,
+      feedback.content,
+      feedback.status || 'open'
+    ]
+  );
+  return result.rows[0];
+}
+
+export async function updateProjectFeedback(id: string, updates: Partial<ProjectFeedback>): Promise<ProjectFeedback | null> {
+  const fields = Object.keys(updates).filter(k => k !== 'id' && k !== 'project_id' && k !== 'created_at');
+  if (fields.length === 0) return null;
+  
+  const setClause = fields.map((f, i) => `${f} = $${i + 1}`).join(', ');
+  const values = fields.map(f => updates[f as keyof ProjectFeedback]);
+  
+  const result = await pool.query(
+    `UPDATE project_feedback SET ${setClause}, updated_at = NOW() WHERE id = $${fields.length + 1} RETURNING *`,
+    [...values, id]
+  );
+  
+  return result.rows[0] || null;
+}
+
+export async function deleteProjectFeedback(id: string): Promise<boolean> {
+  const result = await pool.query('DELETE FROM project_feedback WHERE id = $1', [id]);
+  return (result.rowCount ?? 0) > 0;
 }
 
 export default pool;

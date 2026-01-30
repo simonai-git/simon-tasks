@@ -7,6 +7,8 @@ import Link from 'next/link';
 
 type ProjectStatus = 'defined' | 'in_progress' | 'paused' | 'canceled' | 'completed';
 type TaskStatus = 'todo' | 'in_progress' | 'in_review' | 'done';
+type FeedbackType = 'suggestion' | 'improvement' | 'bug' | 'feature' | 'question';
+type FeedbackStatus = 'open' | 'acknowledged' | 'in_progress' | 'resolved' | 'wont_fix';
 
 interface Project {
   id: string;
@@ -43,6 +45,18 @@ interface Task {
   created_at: string;
 }
 
+interface Feedback {
+  id: string;
+  project_id: string;
+  author: string;
+  type: FeedbackType;
+  title: string;
+  content: string;
+  status: FeedbackStatus;
+  created_at: string;
+  updated_at: string;
+}
+
 const STATUS_CONFIG: Record<ProjectStatus, { label: string; emoji: string; color: string; bgColor: string }> = {
   defined: { label: 'Defined', emoji: '📋', color: 'text-blue-400', bgColor: 'bg-blue-500/20' },
   in_progress: { label: 'In Progress', emoji: '🚀', color: 'text-emerald-400', bgColor: 'bg-emerald-500/20' },
@@ -58,17 +72,41 @@ const TASK_STATUS_CONFIG: Record<TaskStatus, { label: string; color: string }> =
   done: { label: 'Done', color: 'text-emerald-400' },
 };
 
+const FEEDBACK_TYPE_CONFIG: Record<FeedbackType, { label: string; emoji: string; color: string }> = {
+  suggestion: { label: 'Suggestion', emoji: '💡', color: 'text-yellow-400' },
+  improvement: { label: 'Improvement', emoji: '📈', color: 'text-blue-400' },
+  bug: { label: 'Bug', emoji: '🐛', color: 'text-red-400' },
+  feature: { label: 'Feature', emoji: '✨', color: 'text-purple-400' },
+  question: { label: 'Question', emoji: '❓', color: 'text-cyan-400' },
+};
+
+const FEEDBACK_STATUS_CONFIG: Record<FeedbackStatus, { label: string; color: string; bgColor: string }> = {
+  open: { label: 'Open', color: 'text-blue-400', bgColor: 'bg-blue-500/20' },
+  acknowledged: { label: 'Acknowledged', color: 'text-cyan-400', bgColor: 'bg-cyan-500/20' },
+  in_progress: { label: 'In Progress', color: 'text-amber-400', bgColor: 'bg-amber-500/20' },
+  resolved: { label: 'Resolved', color: 'text-emerald-400', bgColor: 'bg-emerald-500/20' },
+  wont_fix: { label: "Won't Fix", color: 'text-gray-400', bgColor: 'bg-gray-500/20' },
+};
+
 export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { status: authStatus } = useSession();
+  const { data: session, status: authStatus } = useSession();
   const router = useRouter();
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'prd' | 'tasks'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'prd' | 'tasks' | 'feedback'>('overview');
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDescription, setNewTaskDescription] = useState('');
   const [newTaskPriority, setNewTaskPriority] = useState<'low' | 'medium' | 'high'>('medium');
+  
+  // Feedback state
+  const [feedback, setFeedback] = useState<Feedback[]>([]);
+  const [showAddFeedbackModal, setShowAddFeedbackModal] = useState(false);
+  const [newFeedbackTitle, setNewFeedbackTitle] = useState('');
+  const [newFeedbackContent, setNewFeedbackContent] = useState('');
+  const [newFeedbackType, setNewFeedbackType] = useState<FeedbackType>('suggestion');
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
 
   useEffect(() => {
     if (authStatus === 'unauthenticated') {
@@ -78,7 +116,20 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
   useEffect(() => {
     fetchProject();
+    fetchFeedback();
   }, [id]);
+
+  const fetchFeedback = async () => {
+    try {
+      const res = await fetch(`/api/projects/${id}/feedback`);
+      if (res.ok) {
+        const data = await res.json();
+        setFeedback(data);
+      }
+    } catch (error) {
+      console.error('Error fetching feedback:', error);
+    }
+  };
 
   const fetchProject = async () => {
     try {
@@ -152,6 +203,56 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       }
     } catch (error) {
       console.error('Error adding task:', error);
+    }
+  };
+
+  const handleAddFeedback = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newFeedbackTitle.trim() || !newFeedbackContent.trim()) return;
+    
+    setSubmittingFeedback(true);
+    try {
+      const res = await fetch(`/api/projects/${id}/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: newFeedbackTitle,
+          content: newFeedbackContent,
+          type: newFeedbackType,
+          author: session?.user?.name || session?.user?.email || 'User',
+        }),
+      });
+
+      if (res.ok) {
+        setNewFeedbackTitle('');
+        setNewFeedbackContent('');
+        setNewFeedbackType('suggestion');
+        setShowAddFeedbackModal(false);
+        fetchFeedback();
+      } else {
+        const error = await res.json();
+        alert(error.error || 'Failed to add feedback');
+      }
+    } catch (error) {
+      console.error('Error adding feedback:', error);
+    } finally {
+      setSubmittingFeedback(false);
+    }
+  };
+
+  const handleUpdateFeedbackStatus = async (feedbackId: string, newStatus: FeedbackStatus) => {
+    try {
+      const res = await fetch(`/api/projects/${id}/feedback/${feedbackId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (res.ok) {
+        fetchFeedback();
+      }
+    } catch (error) {
+      console.error('Error updating feedback:', error);
     }
   };
 
@@ -353,6 +454,16 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           >
             ✅ Tasks ({project.task_count})
           </button>
+          <button
+            onClick={() => setActiveTab('feedback')}
+            className={`px-6 py-3 font-medium transition-colors ${
+              activeTab === 'feedback' 
+                ? 'text-white bg-white/10 border-b-2 border-blue-500' 
+                : 'text-white/50 hover:text-white/70'
+            }`}
+          >
+            💬 Feedback {feedback.length > 0 && `(${feedback.length})`}
+          </button>
         </div>
 
         <div className="p-4 sm:p-6">
@@ -455,6 +566,70 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               )}
             </div>
           )}
+
+          {activeTab === 'feedback' && (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white">Feedback & Suggestions</h3>
+                <button
+                  onClick={() => setShowAddFeedbackModal(true)}
+                  className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg text-sm hover:shadow-lg hover:shadow-purple-500/25 transition-all"
+                >
+                  + Add Feedback
+                </button>
+              </div>
+
+              {feedback.length > 0 ? (
+                <div className="space-y-3">
+                  {feedback.map((item) => {
+                    const typeConfig = FEEDBACK_TYPE_CONFIG[item.type];
+                    const statusConfig = FEEDBACK_STATUS_CONFIG[item.status];
+                    return (
+                      <div
+                        key={item.id}
+                        className="p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors"
+                      >
+                        <div className="flex items-start justify-between gap-3 mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className={typeConfig.color}>{typeConfig.emoji}</span>
+                            <h4 className="font-medium text-white">{item.title}</h4>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <select
+                              value={item.status}
+                              onChange={(e) => handleUpdateFeedbackStatus(item.id, e.target.value as FeedbackStatus)}
+                              className={`text-xs px-2 py-1 rounded-lg border-0 cursor-pointer ${statusConfig.bgColor} ${statusConfig.color} bg-opacity-50`}
+                            >
+                              {Object.entries(FEEDBACK_STATUS_CONFIG).map(([value, config]) => (
+                                <option key={value} value={value} className="bg-slate-800 text-white">
+                                  {config.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                        <p className="text-white/70 text-sm whitespace-pre-wrap mb-3">{item.content}</p>
+                        <div className="flex items-center gap-4 text-xs text-white/40">
+                          <span>By {item.author}</span>
+                          <span>•</span>
+                          <span>{new Date(item.created_at).toLocaleDateString()}</span>
+                          <span className={`px-2 py-0.5 rounded ${typeConfig.color} bg-white/5`}>
+                            {typeConfig.label}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-white/40">
+                  <p className="text-4xl mb-4">💬</p>
+                  <p>No feedback yet.</p>
+                  <p className="text-sm mt-2">Share your suggestions and ideas to improve this project!</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -516,6 +691,80 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                   className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/25 transition-all"
                 >
                   Add Task
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Feedback Modal */}
+      {showAddFeedbackModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowAddFeedbackModal(false)} />
+          <div className="relative glass rounded-2xl p-6 w-full max-w-lg animate-fade-in">
+            <h2 className="text-xl font-bold text-white mb-4">Share Feedback</h2>
+            
+            <form onSubmit={handleAddFeedback} className="space-y-4">
+              <div>
+                <label className="block text-sm text-white/70 mb-1">Type</label>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(FEEDBACK_TYPE_CONFIG).map(([type, config]) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setNewFeedbackType(type as FeedbackType)}
+                      className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
+                        newFeedbackType === type
+                          ? `${config.color} bg-white/20 ring-1 ring-current`
+                          : 'text-white/60 bg-white/5 hover:bg-white/10'
+                      }`}
+                    >
+                      {config.emoji} {config.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm text-white/70 mb-1">Title *</label>
+                <input
+                  type="text"
+                  value={newFeedbackTitle}
+                  onChange={(e) => setNewFeedbackTitle(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white placeholder-white/30 focus:outline-none focus:border-blue-500/50"
+                  placeholder="Brief summary of your feedback"
+                  required
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-white/70 mb-1">Details *</label>
+                <textarea
+                  value={newFeedbackContent}
+                  onChange={(e) => setNewFeedbackContent(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white placeholder-white/30 focus:outline-none focus:border-blue-500/50 resize-none"
+                  placeholder="Describe your suggestion, improvement idea, or question..."
+                  rows={5}
+                  required
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowAddFeedbackModal(false)}
+                  className="flex-1 px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingFeedback}
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:shadow-lg hover:shadow-purple-500/25 transition-all disabled:opacity-50"
+                >
+                  {submittingFeedback ? 'Submitting...' : 'Submit Feedback'}
                 </button>
               </div>
             </form>
