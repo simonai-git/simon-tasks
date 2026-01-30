@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Task } from '@/lib/db';
@@ -46,7 +46,8 @@ function isDateOverdue(dueDateStr: string): boolean {
   return dueDate < today;
 }
 
-export default function TaskCard({ task, onEdit, onDelete, onView, isActive = false }: TaskCardProps) {
+// Memoized TaskCard to prevent re-renders when task data hasn't changed
+const TaskCard = memo(function TaskCard({ task, onEdit, onDelete, onView, isActive = false }: TaskCardProps) {
   // Defer overdue check to client-side only to avoid hydration mismatch
   // (server runs in UTC, client runs in user's local time)
   const [isOverdue, setIsOverdue] = useState(false);
@@ -199,4 +200,26 @@ export default function TaskCard({ task, onEdit, onDelete, onView, isActive = fa
       </div>
     </div>
   );
-}
+}, (prevProps, nextProps) => {
+  // Custom comparison: only re-render if task data or isActive changes
+  const prevTask = prevProps.task;
+  const nextTask = nextProps.task;
+  
+  return (
+    prevProps.isActive === nextProps.isActive &&
+    prevTask.id === nextTask.id &&
+    prevTask.title === nextTask.title &&
+    prevTask.description === nextTask.description &&
+    prevTask.status === nextTask.status &&
+    prevTask.priority === nextTask.priority &&
+    prevTask.assignee === nextTask.assignee &&
+    prevTask.due_date === nextTask.due_date &&
+    prevTask.estimated_hours === nextTask.estimated_hours &&
+    prevTask.time_spent === nextTask.time_spent &&
+    prevTask.progress === nextTask.progress &&
+    prevTask.is_blocked === nextTask.is_blocked &&
+    prevTask.updated_at === nextTask.updated_at
+  );
+});
+
+export default TaskCard;

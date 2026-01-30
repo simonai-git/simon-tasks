@@ -37,6 +37,58 @@ const sortByUpdatedAt = (tasks: Task[]): Task[] => {
   });
 };
 
+// Deep equality check for tasks to avoid unnecessary re-renders
+const tasksAreEqual = (a: Task, b: Task): boolean => {
+  return (
+    a.id === b.id &&
+    a.title === b.title &&
+    a.description === b.description &&
+    a.status === b.status &&
+    a.priority === b.priority &&
+    a.assignee === b.assignee &&
+    a.due_date === b.due_date &&
+    a.estimated_hours === b.estimated_hours &&
+    a.time_spent === b.time_spent &&
+    a.progress === b.progress &&
+    a.is_blocked === b.is_blocked &&
+    a.blocked_reason === b.blocked_reason &&
+    a.updated_at === b.updated_at &&
+    a.project_id === b.project_id
+  );
+};
+
+// Smart merge: only update tasks that actually changed
+const mergeTaskUpdates = (currentTasks: Task[], newTasks: Task[]): Task[] => {
+  // Quick check: if lengths differ, something definitely changed
+  if (currentTasks.length !== newTasks.length) {
+    return newTasks;
+  }
+  
+  // Build a map of current tasks by ID
+  const currentMap = new Map(currentTasks.map(t => [t.id, t]));
+  
+  // Check if any task has actually changed
+  let hasChanges = false;
+  const merged = newTasks.map(newTask => {
+    const currentTask = currentMap.get(newTask.id);
+    if (!currentTask) {
+      // New task added
+      hasChanges = true;
+      return newTask;
+    }
+    if (tasksAreEqual(currentTask, newTask)) {
+      // No change - keep the current reference to prevent re-render
+      return currentTask;
+    }
+    // Task changed
+    hasChanges = true;
+    return newTask;
+  });
+  
+  // If nothing changed, return the original array to maintain reference equality
+  return hasChanges ? merged : currentTasks;
+};
+
 export default function KanbanBoard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -58,29 +110,31 @@ export default function KanbanBoard() {
     })
   );
 
-  // Handle realtime task updates - merge with local state to preserve drag state
+  // Handle realtime task updates - smart diff/merge to prevent flicker
   const handleTasksUpdate = useCallback((newTasks: Task[]) => {
     setTasks(currentTasks => {
-      // If we're not dragging, just use the new tasks
-      if (!activeId) {
-        return newTasks;
-      }
       // If dragging, preserve the dragged task's local status
-      const draggedTask = currentTasks.find(t => t.id === activeId);
-      if (!draggedTask) {
-        return newTasks;
+      let tasksToMerge = newTasks;
+      if (activeId) {
+        const draggedTask = currentTasks.find(t => t.id === activeId);
+        if (draggedTask) {
+          tasksToMerge = newTasks.map(t => 
+            t.id === activeId ? { ...t, status: draggedTask.status } : t
+          );
+        }
       }
-      return newTasks.map(t => 
-        t.id === activeId ? { ...t, status: draggedTask.status } : t
-      );
+      // Smart merge: only update tasks that actually changed
+      return mergeTaskUpdates(currentTasks, tasksToMerge);
     });
     setLoading(false);
     
-    // Update detail task if it's open
+    // Update detail task if it's open (only if task actually changed)
     setDetailTask(current => {
       if (!current) return null;
       const updated = newTasks.find(t => t.id === current.id);
-      return updated || current;
+      if (!updated) return current;
+      // Only update if the task actually changed
+      return tasksAreEqual(current, updated) ? current : updated;
     });
   }, [activeId]);
 
