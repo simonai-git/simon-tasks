@@ -452,9 +452,9 @@ export default function KanbanBoard() {
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex gap-3 sm:gap-4 overflow-x-auto sm:overflow-visible pb-4 -mx-3 px-3 sm:mx-0 sm:px-0 snap-x snap-mandatory sm:snap-none scrollbar-hide w-full">
+        <div className="flex items-stretch gap-3 sm:gap-4 overflow-x-auto sm:overflow-visible pb-4 -mx-3 px-3 sm:mx-0 sm:px-0 snap-x snap-mandatory sm:snap-none scrollbar-hide w-full">
           {columns.map((column, index) => (
-            <div key={column.id} className="animate-fade-in snap-start flex-shrink-0 sm:flex-shrink sm:flex-1 sm:min-w-0" style={{ animationDelay: `${index * 100}ms` }}>
+            <div key={column.id} className="animate-fade-in snap-start flex-shrink-0 sm:flex-shrink sm:flex-1 sm:min-w-0 self-stretch" style={{ animationDelay: `${index * 100}ms` }}>
               <Column
                 id={column.id}
                 title={column.title}
