@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 type ProjectStatus = 'defined' | 'in_progress' | 'paused' | 'canceled' | 'completed';
-type TaskStatus = 'todo' | 'in_progress' | 'in_review' | 'done';
+type TaskStatus = 'todo' | 'in_progress' | 'testing' | 'in_review' | 'done';
 type FeedbackType = 'suggestion' | 'improvement' | 'bug' | 'feature' | 'question';
 type FeedbackStatus = 'open' | 'acknowledged' | 'in_progress' | 'resolved' | 'wont_fix';
 
@@ -70,6 +70,7 @@ const STATUS_CONFIG: Record<ProjectStatus, { label: string; emoji: string; color
 const TASK_STATUS_CONFIG: Record<TaskStatus, { label: string; color: string }> = {
   todo: { label: 'To Do', color: 'text-blue-400' },
   in_progress: { label: 'In Progress', color: 'text-amber-400' },
+  testing: { label: 'Testing', color: 'text-violet-400' },
   in_review: { label: 'In Review', color: 'text-purple-400' },
   done: { label: 'Done', color: 'text-emerald-400' },
 };

@@ -229,7 +229,7 @@ export interface Task {
   id: string;
   title: string;
   description: string | null;
-  status: 'todo' | 'in_progress' | 'in_review' | 'done';
+  status: 'todo' | 'in_progress' | 'testing' | 'in_review' | 'done';
   assignee: string;
   priority: 'low' | 'medium' | 'high';
   due_date: string | null;

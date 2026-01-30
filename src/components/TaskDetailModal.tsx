@@ -35,6 +35,7 @@ interface TaskDetailModalProps {
 const statusConfig = {
   todo: { label: 'To Do', color: 'bg-slate-500', icon: '📋' },
   in_progress: { label: 'In Progress', color: 'bg-blue-500', icon: '⚡' },
+  testing: { label: 'Testing', color: 'bg-purple-500', icon: '🧪' },
   in_review: { label: 'In Review', color: 'bg-amber-500', icon: '👀' },
   done: { label: 'Done', color: 'bg-emerald-500', icon: '✅' },
 };
