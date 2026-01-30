@@ -38,6 +38,7 @@ interface WatcherConfig {
   is_running: boolean;
   last_run: string | null;
   current_task_id: string | null;
+  active_task_ids: string; // JSON array string
 }
 
 export default function KanbanBoard() {
@@ -334,7 +335,7 @@ export default function KanbanBoard() {
                 onEditTask={openEditModal}
                 onDeleteTask={handleDeleteTask}
                 onViewTask={openDetailModal}
-                watcherIsRunning={watcherConfig?.is_running || false}
+                activeTaskIds={watcherConfig?.active_task_ids ? JSON.parse(watcherConfig.active_task_ids) : []}
               />
             </div>
           ))}
@@ -354,7 +355,7 @@ export default function KanbanBoard() {
         onClose={() => setIsDetailOpen(false)}
         onUpdate={handleTaskUpdate}
         onDelete={handleDeleteTask}
-        isActive={watcherConfig?.is_running && detailTask?.status === 'in_progress' && detailTask?.assignee === 'Simon'}
+        isActive={detailTask ? (JSON.parse(watcherConfig?.active_task_ids || '[]') as string[]).includes(detailTask.id) : false}
       />
     </div>
   );

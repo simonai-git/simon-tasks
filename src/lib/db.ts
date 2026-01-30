@@ -71,10 +71,20 @@ async function initDb() {
         is_running BOOLEAN NOT NULL DEFAULT FALSE,
         last_run TIMESTAMPTZ,
         current_task_id TEXT,
+        active_task_ids TEXT DEFAULT '[]',
         updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
     `);
     
+    // Add active_task_ids column if it doesn't exist
+    await client.query(`
+      DO $$ 
+      BEGIN
+        ALTER TABLE watcher_config ADD COLUMN IF NOT EXISTS active_task_ids TEXT DEFAULT '[]';
+      EXCEPTION WHEN OTHERS THEN NULL;
+      END $$;
+    `);
+
     // Ensure watcher config row exists
     await client.query(`
       INSERT INTO watcher_config (id, is_running) 
@@ -236,6 +246,7 @@ export interface WatcherConfig {
   is_running: boolean;
   last_run: string | null;
   current_task_id: string | null;
+  active_task_ids: string; // JSON array string e.g. '["task-id-1", "task-id-2"]'
   updated_at: string;
 }
 

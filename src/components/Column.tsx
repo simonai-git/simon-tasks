@@ -18,10 +18,10 @@ interface ColumnProps {
   onEditTask: (task: Task) => void;
   onDeleteTask: (id: string) => void;
   onViewTask: (task: Task) => void;
-  watcherIsRunning?: boolean;
+  activeTaskIds?: string[];
 }
 
-export default function Column({ id, title, icon, gradient, tasks, onEditTask, onDeleteTask, onViewTask, watcherIsRunning = false }: ColumnProps) {
+export default function Column({ id, title, icon, gradient, tasks, onEditTask, onDeleteTask, onViewTask, activeTaskIds = [] }: ColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id });
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -97,7 +97,7 @@ export default function Column({ id, title, icon, gradient, tasks, onEditTask, o
                 onEdit={onEditTask}
                 onDelete={onDeleteTask}
                 onView={onViewTask}
-                isActive={watcherIsRunning && task.status === 'in_progress' && task.assignee === 'Simon'}
+                isActive={activeTaskIds.includes(task.id)}
               />
             </div>
           ))}

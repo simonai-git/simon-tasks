@@ -30,6 +30,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(config);
     }
     
+    // Add a task ID to active list (agent starting work)
+    if (body.action === 'start_task' && body.task_id) {
+      const currentConfig = await getWatcherConfig();
+      const activeIds: string[] = JSON.parse(currentConfig.active_task_ids || '[]');
+      if (!activeIds.includes(body.task_id)) {
+        activeIds.push(body.task_id);
+      }
+      const config = await updateWatcherConfig({
+        active_task_ids: JSON.stringify(activeIds),
+      });
+      return NextResponse.json(config);
+    }
+    
+    // Remove a task ID from active list (agent finished/failed)
+    if (body.action === 'end_task' && body.task_id) {
+      const currentConfig = await getWatcherConfig();
+      const activeIds: string[] = JSON.parse(currentConfig.active_task_ids || '[]');
+      const newIds = activeIds.filter(id => id !== body.task_id);
+      const config = await updateWatcherConfig({
+        active_task_ids: JSON.stringify(newIds),
+      });
+      return NextResponse.json(config);
+    }
+    
     // Otherwise, update with provided values
     const config = await updateWatcherConfig(body);
     return NextResponse.json(config);
