@@ -205,7 +205,10 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
               </span>
               {task.due_date && (
                 <span className={`flex items-center gap-1 ${isOverdue ? 'text-red-400' : 'text-white/40'}`}>
-                  📅 {new Date(task.due_date).toLocaleDateString()}
+                  📅 {(() => {
+                    const [year, month, day] = task.due_date!.split('-').map(Number);
+                    return new Date(year, month - 1, day).toLocaleDateString();
+                  })()}
                   {isOverdue && <span className="hidden sm:inline"> (OVERDUE)</span>}
                 </span>
               )}
