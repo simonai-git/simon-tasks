@@ -90,30 +90,18 @@ const mergeTaskUpdates = (currentTasks: Task[], newTasks: Task[]): Task[] => {
   return hasChanges ? merged : currentTasks;
 };
 
-// Memoized Live Indicator to prevent flickering on parent re-renders
+// Memoized Live Indicator - simple stable design without animations
 const LiveIndicator = memo(({ isConnected }: { isConnected: boolean }) => (
   <div
-    className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs transition-all ${
+    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium ${
       isConnected
-        ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-        : 'bg-white/5 text-white/40 border border-white/10'
+        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+        : 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
     }`}
     title={isConnected ? 'Real-time updates active' : 'Connecting...'}
   >
-    {isConnected ? (
-      <>
-        <span className="relative flex h-2 w-2">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-        </span>
-        <span className="hidden sm:inline">Live</span>
-      </>
-    ) : (
-      <>
-        <div className="w-2 h-2 border border-current border-t-transparent rounded-full animate-spin" />
-        <span className="hidden sm:inline">...</span>
-      </>
-    )}
+    <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+    <span>{isConnected ? 'Live' : '...'}</span>
   </div>
 ));
 LiveIndicator.displayName = 'LiveIndicator';
