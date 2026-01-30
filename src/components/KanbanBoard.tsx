@@ -91,17 +91,18 @@ const mergeTaskUpdates = (currentTasks: Task[], newTasks: Task[]): Task[] => {
 };
 
 // Memoized Live Indicator - simple stable design without animations
+// Fixed-width indicator to prevent layout shift when text changes
 const LiveIndicator = memo(({ isConnected }: { isConnected: boolean }) => (
   <div
-    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium ${
+    className={`flex items-center justify-center gap-1.5 w-16 py-1.5 rounded-lg text-xs font-medium ${
       isConnected
         ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
         : 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
     }`}
     title={isConnected ? 'Real-time updates active' : 'Connecting...'}
   >
-    <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-400' : 'bg-amber-400'}`} />
-    <span>{isConnected ? 'Live' : '...'}</span>
+    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isConnected ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+    <span className="w-6 text-center">{isConnected ? 'Live' : '...'}</span>
   </div>
 ));
 LiveIndicator.displayName = 'LiveIndicator';
