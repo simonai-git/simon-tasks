@@ -125,6 +125,39 @@ async function initDb() {
       ON CONFLICT (name) DO NOTHING
     `);
     
+    // Create projects table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS projects (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        description TEXT,
+        status TEXT NOT NULL DEFAULT 'defined',
+        owner TEXT NOT NULL DEFAULT 'Bogdan',
+        prd TEXT,
+        goals TEXT,
+        requirements TEXT,
+        constraints TEXT,
+        tech_stack TEXT,
+        timeline TEXT,
+        deadline TIMESTAMPTZ,
+        started_at TIMESTAMPTZ,
+        paused_at TIMESTAMPTZ,
+        completed_at TIMESTAMPTZ,
+        canceled_at TIMESTAMPTZ,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `);
+    
+    // Add project_id to tasks table
+    await client.query(`
+      DO $$ 
+      BEGIN
+        ALTER TABLE tasks ADD COLUMN IF NOT EXISTS project_id TEXT REFERENCES projects(id) ON DELETE SET NULL;
+      EXCEPTION WHEN OTHERS THEN NULL;
+      END $$;
+    `);
+    
     console.log('Database initialized');
   } finally {
     client.release();
@@ -148,6 +181,7 @@ export interface Task {
   is_blocked: boolean;
   blocked_reason: string | null;
   agent_context: string | null;
+  project_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -169,8 +203,8 @@ export async function getTasksByStatus(status: string): Promise<Task[]> {
 
 export async function createTask(task: Partial<Task> & { id: string; title: string }): Promise<Task> {
   const result = await pool.query(
-    `INSERT INTO tasks (id, title, description, status, assignee, priority, due_date, estimated_hours, time_spent, progress, is_blocked, blocked_reason, agent_context)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+    `INSERT INTO tasks (id, title, description, status, assignee, priority, due_date, estimated_hours, time_spent, progress, is_blocked, blocked_reason, agent_context, project_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
      RETURNING *`,
     [
       task.id,
@@ -185,10 +219,19 @@ export async function createTask(task: Partial<Task> & { id: string; title: stri
       task.progress || 0,
       task.is_blocked || false,
       task.blocked_reason || null,
-      task.agent_context || null
+      task.agent_context || null,
+      task.project_id || null
     ]
   );
   return result.rows[0];
+}
+
+export async function getTasksByProjectId(projectId: string): Promise<Task[]> {
+  const result = await pool.query(
+    'SELECT * FROM tasks WHERE project_id = $1 ORDER BY created_at ASC',
+    [projectId]
+  );
+  return result.rows;
 }
 
 export async function updateTask(id: string, updates: Partial<Task>): Promise<Task | null> {
@@ -392,6 +435,189 @@ export async function deleteAgent(id: string): Promise<boolean> {
 export async function incrementAgentTasksCompleted(id: string): Promise<Agent | null> {
   const result = await pool.query(
     `UPDATE agents SET tasks_completed = tasks_completed + 1, updated_at = NOW() WHERE id = $1 RETURNING *`,
+    [id]
+  );
+  return result.rows[0] || null;
+}
+
+// Projects
+export type ProjectStatus = 'defined' | 'in_progress' | 'paused' | 'canceled' | 'completed';
+
+export interface Project {
+  id: string;
+  title: string;
+  description: string | null;
+  status: ProjectStatus;
+  owner: string;
+  prd: string | null;
+  goals: string | null;
+  requirements: string | null;
+  constraints: string | null;
+  tech_stack: string | null;
+  timeline: string | null;
+  deadline: string | null;
+  started_at: string | null;
+  paused_at: string | null;
+  completed_at: string | null;
+  canceled_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProjectWithStats extends Project {
+  task_count: number;
+  completed_task_count: number;
+}
+
+export async function getAllProjects(): Promise<ProjectWithStats[]> {
+  const result = await pool.query(`
+    SELECT p.*,
+           COALESCE(t.task_count, 0)::int as task_count,
+           COALESCE(t.completed_task_count, 0)::int as completed_task_count
+    FROM projects p
+    LEFT JOIN (
+      SELECT project_id, 
+             COUNT(*) as task_count,
+             COUNT(*) FILTER (WHERE status = 'done') as completed_task_count
+      FROM tasks
+      WHERE project_id IS NOT NULL
+      GROUP BY project_id
+    ) t ON p.id = t.project_id
+    ORDER BY p.created_at DESC
+  `);
+  return result.rows;
+}
+
+export async function getProject(id: string): Promise<ProjectWithStats | null> {
+  const result = await pool.query(`
+    SELECT p.*,
+           COALESCE(t.task_count, 0)::int as task_count,
+           COALESCE(t.completed_task_count, 0)::int as completed_task_count
+    FROM projects p
+    LEFT JOIN (
+      SELECT project_id, 
+             COUNT(*) as task_count,
+             COUNT(*) FILTER (WHERE status = 'done') as completed_task_count
+      FROM tasks
+      WHERE project_id IS NOT NULL
+      GROUP BY project_id
+    ) t ON p.id = t.project_id
+    WHERE p.id = $1
+  `, [id]);
+  return result.rows[0] || null;
+}
+
+export async function getProjectsByStatus(status: ProjectStatus): Promise<ProjectWithStats[]> {
+  const result = await pool.query(`
+    SELECT p.*,
+           COALESCE(t.task_count, 0)::int as task_count,
+           COALESCE(t.completed_task_count, 0)::int as completed_task_count
+    FROM projects p
+    LEFT JOIN (
+      SELECT project_id, 
+             COUNT(*) as task_count,
+             COUNT(*) FILTER (WHERE status = 'done') as completed_task_count
+      FROM tasks
+      WHERE project_id IS NOT NULL
+      GROUP BY project_id
+    ) t ON p.id = t.project_id
+    WHERE p.status = $1
+    ORDER BY p.created_at DESC
+  `, [status]);
+  return result.rows;
+}
+
+export async function createProject(project: Partial<Project> & { id: string; title: string }): Promise<Project> {
+  const result = await pool.query(
+    `INSERT INTO projects (id, title, description, status, owner, prd, goals, requirements, constraints, tech_stack, timeline, deadline)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+     RETURNING *`,
+    [
+      project.id,
+      project.title,
+      project.description || null,
+      project.status || 'defined',
+      project.owner || 'Bogdan',
+      project.prd || null,
+      project.goals || null,
+      project.requirements || null,
+      project.constraints || null,
+      project.tech_stack || null,
+      project.timeline || null,
+      project.deadline || null
+    ]
+  );
+  return result.rows[0];
+}
+
+export async function updateProject(id: string, updates: Partial<Project>): Promise<Project | null> {
+  const fields = Object.keys(updates).filter(k => k !== 'id' && k !== 'created_at');
+  if (fields.length === 0) return null;
+  
+  const setClause = fields.map((f, i) => `${f} = $${i + 1}`).join(', ');
+  const values = fields.map(f => updates[f as keyof Project]);
+  
+  const result = await pool.query(
+    `UPDATE projects SET ${setClause}, updated_at = NOW() WHERE id = $${fields.length + 1} RETURNING *`,
+    [...values, id]
+  );
+  
+  return result.rows[0] || null;
+}
+
+export async function deleteProject(id: string): Promise<boolean> {
+  // First unlink all tasks from this project
+  await pool.query('UPDATE tasks SET project_id = NULL WHERE project_id = $1', [id]);
+  const result = await pool.query('DELETE FROM projects WHERE id = $1', [id]);
+  return (result.rowCount ?? 0) > 0;
+}
+
+// Project lifecycle transitions
+export async function startProject(id: string): Promise<Project | null> {
+  const result = await pool.query(
+    `UPDATE projects SET status = 'in_progress', started_at = NOW(), updated_at = NOW() 
+     WHERE id = $1 AND status = 'defined' 
+     RETURNING *`,
+    [id]
+  );
+  return result.rows[0] || null;
+}
+
+export async function pauseProject(id: string): Promise<Project | null> {
+  const result = await pool.query(
+    `UPDATE projects SET status = 'paused', paused_at = NOW(), updated_at = NOW() 
+     WHERE id = $1 AND status = 'in_progress' 
+     RETURNING *`,
+    [id]
+  );
+  return result.rows[0] || null;
+}
+
+export async function resumeProject(id: string): Promise<Project | null> {
+  const result = await pool.query(
+    `UPDATE projects SET status = 'in_progress', paused_at = NULL, updated_at = NOW() 
+     WHERE id = $1 AND status = 'paused' 
+     RETURNING *`,
+    [id]
+  );
+  return result.rows[0] || null;
+}
+
+export async function cancelProject(id: string): Promise<Project | null> {
+  const result = await pool.query(
+    `UPDATE projects SET status = 'canceled', canceled_at = NOW(), updated_at = NOW() 
+     WHERE id = $1 AND status IN ('defined', 'in_progress', 'paused') 
+     RETURNING *`,
+    [id]
+  );
+  return result.rows[0] || null;
+}
+
+export async function completeProject(id: string): Promise<Project | null> {
+  const result = await pool.query(
+    `UPDATE projects SET status = 'completed', completed_at = NOW(), updated_at = NOW() 
+     WHERE id = $1 AND status = 'in_progress' 
+     RETURNING *`,
     [id]
   );
   return result.rows[0] || null;
