@@ -69,10 +69,18 @@ function getTodayString(): string {
   return `${year}-${month}-${day}`;
 }
 
+interface Agent {
+  id: string;
+  name: string;
+  role: string;
+  emoji?: string;
+}
+
 export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDelete, isActive = false }: TaskDetailModalProps) {
   const { data: session } = useSession();
   const [comments, setComments] = useState<Comment[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [agents, setAgents] = useState<Agent[]>([]);
   const [newComment, setNewComment] = useState('');
   const [loadingComments, setLoadingComments] = useState(false);
   const [submittingComment, setSubmittingComment] = useState(false);
@@ -95,6 +103,20 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
       fetchActivity();
     }
   }, [task, isOpen]);
+
+  // Fetch available agents for assignment
+  useEffect(() => {
+    const fetchAgents = async () => {
+      try {
+        const res = await fetch('/api/agents');
+        const data = await res.json();
+        setAgents(data);
+      } catch (error) {
+        console.error('Error fetching agents:', error);
+      }
+    };
+    fetchAgents();
+  }, []);
 
   const fetchComments = async () => {
     if (!task) return;
@@ -390,24 +412,34 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDel
               {/* Assignee */}
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-white/70 mb-2 sm:mb-3">Assignee</label>
-                <div className="flex gap-2">
-                  {(['Simon', 'Bogdan'] as Task['assignee'][]).map((a) => {
-                    const isActive = task.assignee === a;
-                    const config = a === 'Simon' 
-                      ? { emoji: '🦊', color: 'bg-purple-500/20 border-purple-500/50 text-purple-300' }
-                      : { emoji: '👤', color: 'bg-blue-500/20 border-blue-500/50 text-blue-300' };
+                <div className="flex flex-wrap gap-2">
+                  {/* Bogdan (owner) */}
+                  <button
+                    onClick={() => handleFieldUpdate('assignee', 'Bogdan')}
+                    className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl border transition-all ${
+                      task.assignee === 'Bogdan'
+                        ? 'bg-blue-500/20 border-blue-500/50 text-blue-300'
+                        : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'
+                    }`}
+                  >
+                    <span>👤</span>
+                    <span className="text-xs sm:text-sm font-medium">Bogdan</span>
+                  </button>
+                  {/* AI Agents */}
+                  {agents.map((agent) => {
+                    const isActive = task.assignee === agent.name;
                     return (
                       <button
-                        key={a}
-                        onClick={() => handleFieldUpdate('assignee', a)}
+                        key={agent.id}
+                        onClick={() => handleFieldUpdate('assignee', agent.name)}
                         className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl border transition-all ${
                           isActive
-                            ? config.color
+                            ? 'bg-purple-500/20 border-purple-500/50 text-purple-300'
                             : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'
                         }`}
                       >
-                        <span>{config.emoji}</span>
-                        <span className="text-xs sm:text-sm font-medium">{a}</span>
+                        <span>{agent.emoji || '🤖'}</span>
+                        <span className="text-xs sm:text-sm font-medium">{agent.name}</span>
                       </button>
                     );
                   })}
