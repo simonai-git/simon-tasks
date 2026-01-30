@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAgent, updateAgent, deleteAgent } from '@/lib/db';
 
 // API key from environment
-const API_KEY = process.env.API_KEY;
+const API_KEY = process.env.SIMON_API_KEY;
 
 function checkAuth(request: NextRequest): boolean {
   const apiKey = request.headers.get('x-api-key');

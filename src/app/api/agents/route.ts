@@ -3,7 +3,7 @@ import { getAllAgents, getActiveAgents, createAgent, Agent } from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
 
 // API key from environment
-const API_KEY = process.env.API_KEY;
+const API_KEY = process.env.SIMON_API_KEY;
 
 function checkAuth(request: NextRequest): boolean {
   const apiKey = request.headers.get('x-api-key');
