@@ -90,20 +90,6 @@ const TaskCard = memo(function TaskCard({ task, onEdit, onDelete, onView, isActi
         isDragging ? 'opacity-50 scale-105 shadow-2xl shadow-purple-500/20 border-purple-500/30' : ''
       } ${task.is_blocked ? 'border-red-500/30' : isOverdue ? 'border-orange-500/30' : 'border-white/[0.06] hover:border-white/[0.12]'}`}
     >
-      {/* Active work indicator */}
-      <div className="absolute top-2 right-2 z-10">
-        {isActive ? (
-          <span className="relative flex h-3 w-3" title="Agent actively working on this task">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-          </span>
-        ) : task.status === 'in_progress' ? (
-          <span className="flex h-3 w-3" title="In progress but not actively being worked on">
-            <span className="rounded-full h-3 w-3 bg-gray-500/50"></span>
-          </span>
-        ) : null}
-      </div>
-
       {/* Blocked/Overdue indicator */}
       {(task.is_blocked || isOverdue) && (
         <div className={`absolute top-0 left-0 right-0 h-1 rounded-t-xl ${task.is_blocked ? 'bg-red-500' : 'bg-orange-500'}`} />
@@ -202,10 +188,19 @@ const TaskCard = memo(function TaskCard({ task, onEdit, onDelete, onView, isActi
           )}
         </div>
         
-        {/* Assignee */}
+        {/* Assignee with active indicator */}
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br ${assignee.color} flex items-center justify-center text-xs sm:text-sm shadow-lg`}>
-            {assignee.emoji}
+          <div className="relative">
+            <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br ${assignee.color} flex items-center justify-center text-xs sm:text-sm shadow-lg`}>
+              {assignee.emoji}
+            </div>
+            {/* Active work indicator - shows when agent is actively working */}
+            {isActive && (
+              <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5" title="Agent actively working on this task">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 border border-[#0d0d0f]"></span>
+              </span>
+            )}
           </div>
           <span className="text-[10px] sm:text-xs text-white/50 font-medium">
             {task.assignee}
