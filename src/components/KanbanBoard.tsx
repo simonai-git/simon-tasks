@@ -410,41 +410,7 @@ export default function KanbanBoard() {
           )}
         </div>
         
-        {/* Search Bar */}
-        <div className="mt-4 pt-4 border-t border-white/10">
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg className="h-4 w-4 sm:h-5 sm:w-5 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-            <input
-              type="text"
-              placeholder="Search tasks by title or project..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 sm:pl-10 pr-10 py-2 sm:py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 text-sm focus:outline-none focus:border-blue-500/50 focus:bg-white/8 focus:ring-2 focus:ring-blue-500/20 transition-all"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-white/40 hover:text-white/70 transition-colors"
-                title="Clear search"
-              >
-                <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            )}
-          </div>
-          {searchQuery && (
-            <p className="mt-2 text-xs text-white/50">
-              Found {filteredTasks.length} task{filteredTasks.length !== 1 ? 's' : ''} matching "{searchQuery}"
-            </p>
-          )}
-        </div>
-
-        {/* Row 2: New Task + Agents left, Watcher right */}
+        {/* Row 2: New Task + Agents left, Search + Live + Watcher right */}
         <div className="flex items-center justify-between gap-3 mt-4 pt-4 border-t border-white/10">
           <div className="flex items-center gap-2">
             {/* New Task Button */}
@@ -476,6 +442,33 @@ export default function KanbanBoard() {
           </div>
           
           <div className="flex items-center gap-2">
+            {/* Search Bar - positioned next to Live Updates, ~3x watcher width */}
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+                <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-32 sm:w-48 lg:w-64 pl-8 sm:pl-9 pr-7 py-1.5 sm:py-2 bg-white/5 border border-white/10 rounded-lg sm:rounded-xl text-white placeholder-white/40 text-xs sm:text-sm focus:outline-none focus:border-blue-500/50 focus:bg-white/8 focus:ring-2 focus:ring-blue-500/20 transition-all"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute inset-y-0 right-0 pr-2 flex items-center text-white/40 hover:text-white/70 transition-colors"
+                  title="Clear search"
+                >
+                  <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+            
             {/* Live Updates Toggle */}
             <LiveIndicator enabled={sseEnabled} onToggle={() => setSseEnabled(!sseEnabled)} />
             
