@@ -207,7 +207,7 @@ const TaskCard = memo(function TaskCard({ task, onEdit, onDelete, onView, isActi
           <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br ${assignee.color} flex items-center justify-center text-xs sm:text-sm shadow-lg`}>
             {assignee.emoji}
           </div>
-          <span className="text-[10px] sm:text-xs text-white/50 font-medium hidden xs:inline">
+          <span className="text-[10px] sm:text-xs text-white/50 font-medium">
             {task.assignee}
           </span>
         </div>
