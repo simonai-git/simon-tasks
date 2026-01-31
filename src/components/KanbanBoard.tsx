@@ -114,7 +114,7 @@ const LiveIndicator = ({ enabled, onToggle }: LiveIndicatorProps) => (
     ) : (
       <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full flex-shrink-0 bg-white/30" />
     )}
-    <span className="hidden sm:inline">{enabled ? 'Live Updates On' : 'Live Updates Off'}</span>
+    <span className="hidden sm:inline">{enabled ? 'Live On' : 'Live Off'}</span>
     <span className="sm:hidden">{enabled ? 'Live' : 'Off'}</span>
   </button>
 );
@@ -500,21 +500,17 @@ export default function KanbanBoard() {
               title={watcherConfig?.is_running ? 'Watcher is running - click to pause' : 'Watcher is paused - click to start'}
             >
               {togglingWatcher ? (
-                <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 border-2 border-current border-t-transparent rounded-full animate-spin flex-shrink-0" />
               ) : watcherConfig?.is_running ? (
-                <>
-                  <span className="relative flex h-2.5 w-2.5 sm:h-3 sm:w-3">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 sm:h-3 sm:w-3 bg-emerald-500"></span>
-                  </span>
-                  <span className="hidden sm:inline">Watcher</span>
-                </>
+                <span className="relative flex h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 sm:h-3 sm:w-3 bg-emerald-500"></span>
+                </span>
               ) : (
-                <>
-                  <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-white/30"></span>
-                  <span className="hidden sm:inline">Paused</span>
-                </>
+                <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full flex-shrink-0 bg-white/30" />
               )}
+              <span className="hidden sm:inline">{watcherConfig?.is_running ? 'Watcher On' : 'Watcher Off'}</span>
+              <span className="sm:hidden">{watcherConfig?.is_running ? 'Watch' : 'Off'}</span>
             </button>
           </div>
         </div>
