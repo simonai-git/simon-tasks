@@ -99,7 +99,7 @@ export default function Column({ id, title, icon, gradient, tasks, onEditTask, o
                 onDelete={onDeleteTask}
                 onView={onViewTask}
                 isActive={activeTaskIds.includes(task.id)}
-                projectName={task.project_id && projectNames ? projectNames.get(task.project_id) : undefined}
+                projectName={(task.project_id && projectNames?.get(task.project_id)) || "General Task"}
               />
             </div>
           ))}

@@ -509,7 +509,7 @@ export default function KanbanBoard() {
         onUpdate={handleTaskUpdate}
         onDelete={handleDeleteTask}
         isActive={detailTask ? (JSON.parse(watcherConfig?.active_task_ids || '[]') as string[]).includes(detailTask.id) : false}
-        projectName={detailTask?.project_id ? projects.get(detailTask.project_id) : undefined}
+        projectName={(detailTask?.project_id && projects.get(detailTask.project_id)) || "General Task"}
       />
     </div>
   );
