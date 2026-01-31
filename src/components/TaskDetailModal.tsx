@@ -47,6 +47,19 @@ const priorityConfig = {
   high: { label: 'High', color: 'bg-red-500/20 text-red-400 border-red-500/30' },
 };
 
+const assigneeConfig: Record<string, { color: string; emoji: string }> = {
+  Bogdan: { color: 'from-blue-500 to-cyan-500', emoji: '👤' },
+  Simon: { color: 'from-orange-500 to-amber-500', emoji: '🦊' },
+  Sam: { color: 'from-purple-500 to-pink-500', emoji: '📋' },
+  Casey: { color: 'from-cyan-500 to-blue-500', emoji: '🎨' },
+  Riley: { color: 'from-emerald-500 to-teal-500', emoji: '⚙️' },
+  Jordan: { color: 'from-violet-500 to-purple-500', emoji: '🔧' },
+  Morgan: { color: 'from-rose-500 to-pink-500', emoji: '🤖' },
+  Alex: { color: 'from-amber-500 to-orange-500', emoji: '🧪' },
+};
+
+const defaultAssigneeConfig = { color: 'from-slate-500 to-slate-600', emoji: '🤖' };
+
 // Compare due date (YYYY-MM-DD string) against today in local time
 function isDateOverdue(dueDateStr: string): boolean {
   // Parse the due date as local midnight (not UTC)
@@ -232,8 +245,11 @@ function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDelete, isActive =
               <span className={`inline-flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full border ${priority.color}`}>
                 {priority.label}
               </span>
-              <span className="text-white/40">
-                {task.assignee}
+              <span className="flex items-center gap-1.5 text-white/50">
+                <span className={`w-5 h-5 rounded-full bg-gradient-to-br ${(assigneeConfig[task.assignee] || defaultAssigneeConfig).color} flex items-center justify-center text-[10px] shadow-sm`}>
+                  {(assigneeConfig[task.assignee] || defaultAssigneeConfig).emoji}
+                </span>
+                <span className="text-white/60">{task.assignee}</span>
               </span>
               {task.due_date && (
                 <span className={`flex items-center gap-1 ${isOverdue ? 'text-red-400' : 'text-white/40'}`}>
