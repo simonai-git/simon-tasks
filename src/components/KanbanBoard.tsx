@@ -142,7 +142,7 @@ export default function KanbanBoard() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { data: session } = useSession();
 
-  // Filter tasks based on search query (matches title or project name)
+  // Filter tasks based on search query (matches title, project name, or task ID)
   const filteredTasks = useMemo(() => {
     if (!searchQuery.trim()) return tasks;
     const query = searchQuery.toLowerCase().trim();
@@ -150,7 +150,8 @@ export default function KanbanBoard() {
       const titleMatch = task.title.toLowerCase().includes(query);
       const projectName = task.project_id ? projects.get(task.project_id) : '';
       const projectMatch = projectName?.toLowerCase().includes(query);
-      return titleMatch || projectMatch;
+      const idMatch = task.id.toLowerCase().includes(query);
+      return titleMatch || projectMatch || idMatch;
     });
   }, [tasks, searchQuery, projects]);
 
