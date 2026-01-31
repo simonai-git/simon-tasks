@@ -90,16 +90,26 @@ const mergeTaskUpdates = (currentTasks: Task[], newTasks: Task[]): Task[] => {
   return hasChanges ? merged : currentTasks;
 };
 
-// Memoized Live Indicator - simple stable design without animations
-// Static Live indicator - no state changes to prevent any flickering
-const LiveIndicator = () => (
-  <div
-    className="flex items-center justify-center gap-1.5 w-16 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
-    title="Real-time updates active"
+// Interactive Live Indicator toggle - controls SSE updates
+interface LiveIndicatorProps {
+  enabled: boolean;
+  onToggle: () => void;
+}
+
+const LiveIndicator = ({ enabled, onToggle }: LiveIndicatorProps) => (
+  <button
+    onClick={onToggle}
+    className={`group flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl font-medium transition-all text-xs sm:text-sm ${
+      enabled
+        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30'
+        : 'bg-white/5 text-white/50 border border-white/10 hover:bg-white/10 hover:text-white/70'
+    }`}
+    title={enabled ? 'Live updates enabled - click to disable' : 'Live updates disabled - click to enable'}
   >
-    <span className="w-2 h-2 rounded-full flex-shrink-0 bg-emerald-400" />
-    <span>Live</span>
-  </div>
+    <span className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full flex-shrink-0 ${enabled ? 'bg-emerald-400' : 'bg-white/30'}`} />
+    <span className="hidden sm:inline">{enabled ? 'Live Updates On' : 'Live Updates Off'}</span>
+    <span className="sm:hidden">{enabled ? 'Live' : 'Off'}</span>
+  </button>
 );
 
 export default function KanbanBoard() {
@@ -113,6 +123,7 @@ export default function KanbanBoard() {
   const [watcherConfig, setWatcherConfig] = useState<WatcherConfig | null>(null);
   const [togglingWatcher, setTogglingWatcher] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const [sseEnabled, setSseEnabled] = useState(true);
   const { data: session } = useSession();
 
   const sensors = useSensors(
@@ -162,7 +173,7 @@ export default function KanbanBoard() {
     onWatcherUpdate: handleWatcherUpdate,
     onConnect: () => setIsConnected(true),
     onDisconnect: () => setIsConnected(false),
-    enabled: true,
+    enabled: sseEnabled,
   });
 
   // Initial data fetch as fallback (SSE will take over once connected)
