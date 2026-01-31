@@ -1,15 +1,69 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllAgents, getActiveAgents, createAgent, Agent } from '@/lib/db';
+import pool from '@/lib/db';
 import { v4 as uuidv4 } from 'uuid';
 import { getServerSession } from 'next-auth';
 
-// GET /api/agents - Get all agents
+export interface AgentWithMetrics extends Agent {
+  assigned_count: number;
+  worked_count: number;
+  completed_count: number;
+}
+
+// Compute metrics for all agents from tasks table
+async function computeAgentMetrics(): Promise<Record<string, { assigned: number; worked: number; completed: number }>> {
+  const result = await pool.query('SELECT assignee, status, worked_by FROM tasks');
+  const tasks = result.rows;
+  
+  const metrics: Record<string, { assigned: number; worked: number; completed: number }> = {};
+  
+  for (const task of tasks) {
+    const assignee = task.assignee;
+    const status = task.status;
+    const workedBy: string[] = task.worked_by ? JSON.parse(task.worked_by) : [];
+    
+    // Initialize metrics for assignee if not exists
+    if (!metrics[assignee]) {
+      metrics[assignee] = { assigned: 0, worked: 0, completed: 0 };
+    }
+    metrics[assignee].assigned++;
+    
+    // Count worked_by contributions
+    for (const contributor of workedBy) {
+      if (!metrics[contributor]) {
+        metrics[contributor] = { assigned: 0, worked: 0, completed: 0 };
+      }
+      metrics[contributor].worked++;
+      
+      // Count completed tasks (where contributor is in worked_by AND status = 'done')
+      if (status === 'done') {
+        metrics[contributor].completed++;
+      }
+    }
+  }
+  
+  return metrics;
+}
+
+// GET /api/agents - Get all agents with computed metrics
 export async function GET(request: NextRequest) {
 
   try {
     const activeOnly = request.nextUrl.searchParams.get('active') === 'true';
     const agents = activeOnly ? await getActiveAgents() : await getAllAgents();
-    return NextResponse.json(agents);
+    
+    // Compute metrics from tasks
+    const metrics = await computeAgentMetrics();
+    
+    // Add metrics to each agent
+    const agentsWithMetrics: AgentWithMetrics[] = agents.map(agent => ({
+      ...agent,
+      assigned_count: metrics[agent.name]?.assigned || 0,
+      worked_count: metrics[agent.name]?.worked || 0,
+      completed_count: metrics[agent.name]?.completed || 0,
+    }));
+    
+    return NextResponse.json(agentsWithMetrics);
   } catch (error) {
     console.error('Error fetching agents:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
