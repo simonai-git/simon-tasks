@@ -139,6 +139,7 @@ export default function KanbanBoard() {
   const [isConnected, setIsConnected] = useState(false);
   const [sseEnabled, setSseEnabled] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { data: session } = useSession();
 
   // Filter tasks based on search query (matches title or project name)
@@ -442,19 +443,19 @@ export default function KanbanBoard() {
           </div>
           
           <div className="flex items-center gap-2">
-            {/* Search Bar - positioned next to Live Updates, ~3x watcher width */}
-            <div className="relative">
+            {/* Search Bar - Hidden on mobile, visible on md+ */}
+            <div className="relative hidden md:block">
               <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
-                <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="h-4 w-4 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
               <input
                 type="text"
-                placeholder="Search..."
+                placeholder="Search tasks or projects..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-56 sm:w-80 lg:w-[420px] pl-8 sm:pl-9 pr-7 py-1.5 sm:py-2 bg-white/5 border border-white/10 rounded-lg sm:rounded-xl text-white placeholder-white/40 text-xs sm:text-sm focus:outline-none focus:border-blue-500/50 focus:bg-white/8 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                className="w-80 lg:w-[420px] pl-9 pr-7 py-2 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 text-sm focus:outline-none focus:border-blue-500/50 focus:bg-white/8 focus:ring-2 focus:ring-blue-500/20 transition-all"
               />
               {searchQuery && (
                 <button
@@ -462,12 +463,27 @@ export default function KanbanBoard() {
                   className="absolute inset-y-0 right-0 pr-2 flex items-center text-white/40 hover:text-white/70 transition-colors"
                   title="Clear search"
                 >
-                  <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               )}
             </div>
+            
+            {/* Mobile Search Toggle Button */}
+            <button
+              onClick={() => setIsSearchOpen(!isSearchOpen)}
+              className={`md:hidden flex items-center justify-center w-8 h-8 rounded-lg transition-all ${
+                isSearchOpen || searchQuery
+                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                  : 'bg-white/5 text-white/50 border border-white/10 hover:bg-white/10 hover:text-white/70'
+              }`}
+              title="Search"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </button>
             
             {/* Live Updates Toggle */}
             <LiveIndicator enabled={sseEnabled} onToggle={() => setSseEnabled(!sseEnabled)} />
@@ -502,6 +518,38 @@ export default function KanbanBoard() {
             </button>
           </div>
         </div>
+        
+        {/* Mobile Search Bar - Expandable row below controls */}
+        {isSearchOpen && (
+          <div className="md:hidden mt-4 pt-4 border-t border-white/10 animate-fade-in">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-4 w-4 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                placeholder="Search tasks or projects..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                autoFocus
+                className="w-full pl-10 pr-10 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 text-sm focus:outline-none focus:border-blue-500/50 focus:bg-white/8 focus:ring-2 focus:ring-blue-500/20 transition-all"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-white/40 hover:text-white/70 transition-colors"
+                  title="Clear search"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Board - horizontal scroll with snap on mobile */}
