@@ -46,22 +46,46 @@ async function computeAgentMetrics(): Promise<Record<string, { assigned: number;
 }
 
 // GET /api/agents - Get all agents with computed metrics
+// Supports filtering:
+//   ?active=true - only active agents
+//   ?specialization=frontend - filter by specialization (case-insensitive, partial match)
+//   ?available=true - only agents not currently working on a task
 export async function GET(request: NextRequest) {
 
   try {
     const activeOnly = request.nextUrl.searchParams.get('active') === 'true';
-    const agents = activeOnly ? await getActiveAgents() : await getAllAgents();
+    const specializationFilter = request.nextUrl.searchParams.get('specialization')?.toLowerCase();
+    const availableOnly = request.nextUrl.searchParams.get('available') === 'true';
+    
+    let agents = activeOnly ? await getActiveAgents() : await getAllAgents();
+    
+    // Filter by specialization (case-insensitive partial match)
+    if (specializationFilter) {
+      agents = agents.filter(agent => 
+        agent.specialization?.toLowerCase().includes(specializationFilter) ||
+        agent.description?.toLowerCase().includes(specializationFilter)
+      );
+    }
     
     // Compute metrics from tasks
     const metrics = await computeAgentMetrics();
     
     // Add metrics to each agent
-    const agentsWithMetrics: AgentWithMetrics[] = agents.map(agent => ({
+    let agentsWithMetrics: AgentWithMetrics[] = agents.map(agent => ({
       ...agent,
       assigned_count: metrics[agent.name]?.assigned || 0,
       worked_count: metrics[agent.name]?.worked || 0,
       completed_count: metrics[agent.name]?.completed || 0,
     }));
+    
+    // Filter for available agents (no in_progress tasks assigned to them)
+    if (availableOnly) {
+      const inProgressResult = await pool.query(
+        "SELECT DISTINCT assignee FROM tasks WHERE status = 'in_progress'"
+      );
+      const busyAgents = new Set(inProgressResult.rows.map(r => r.assignee));
+      agentsWithMetrics = agentsWithMetrics.filter(agent => !busyAgents.has(agent.name));
+    }
     
     return NextResponse.json(agentsWithMetrics);
   } catch (error) {
