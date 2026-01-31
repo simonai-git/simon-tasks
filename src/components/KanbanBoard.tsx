@@ -404,8 +404,8 @@ export default function KanbanBoard() {
           </div>
           
           <div className="flex items-center gap-2">
-            {/* Live Updates Indicator */}
-            <LiveIndicator />
+            {/* Live Updates Toggle */}
+            <LiveIndicator enabled={sseEnabled} onToggle={() => setSseEnabled(!sseEnabled)} />
             
             {/* Watcher Toggle */}
             <button

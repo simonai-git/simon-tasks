@@ -3,9 +3,18 @@ import { getAllTasks, createTask } from '@/lib/db';
 import { sendWebhook } from '@/lib/webhook';
 import { v4 as uuidv4 } from 'uuid';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const tasks = await getAllTasks();
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get('status');
+    
+    let tasks = await getAllTasks();
+    
+    // Filter by status if provided
+    if (status) {
+      tasks = tasks.filter(task => task.status === status);
+    }
+    
     return NextResponse.json(tasks, {
       headers: {
         'Cache-Control': 'private, max-age=5, stale-while-revalidate=10',
