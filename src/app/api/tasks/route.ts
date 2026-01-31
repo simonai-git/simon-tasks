@@ -10,9 +10,10 @@ export async function GET(request: NextRequest) {
     
     let tasks = await getAllTasks();
     
-    // Filter by status if provided
+    // Filter by status if provided (supports comma-separated values)
     if (status) {
-      tasks = tasks.filter(task => task.status === status);
+      const statuses = status.split(',').map(s => s.trim());
+      tasks = tasks.filter(task => statuses.includes(task.status));
     }
     
     return NextResponse.json(tasks, {

@@ -42,6 +42,21 @@ export async function POST(
     // Parse optional overrides from request body
     const body = await request.json().catch(() => ({}));
     
+    // Check for existing task from this feedback (prevent duplicates)
+    const existingTaskResult = await pool.query(
+      'SELECT id, status FROM tasks WHERE feedback_id = $1',
+      [feedbackId]
+    );
+    
+    if (existingTaskResult.rows.length > 0) {
+      const existingTask = existingTaskResult.rows[0];
+      return NextResponse.json({ 
+        error: 'Task already exists for this feedback',
+        existingTaskId: existingTask.id,
+        existingTaskStatus: existingTask.status
+      }, { status: 409 });
+    }
+    
     // Determine priority based on feedback type
     let priority: 'low' | 'medium' | 'high' = 'medium';
     if (feedback.type === 'bug') priority = 'high';
