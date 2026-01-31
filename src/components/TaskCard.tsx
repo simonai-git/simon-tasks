@@ -86,9 +86,9 @@ const TaskCard = memo(function TaskCard({ task, onEdit, onDelete, onView, isActi
       {...attributes}
       {...listeners}
       onClick={() => !isDragging && onView(task)}
-      className={`group relative bg-white/[0.03] hover:bg-white/[0.06] border rounded-xl p-3 sm:p-4 cursor-pointer active:cursor-grabbing transition-all duration-200 touch-manipulation ${
+      className={`group relative bg-white/[0.03] hover:bg-white/[0.06] border rounded-xl p-3 sm:p-4 cursor-pointer active:cursor-grabbing transition-all duration-200 touch-manipulation hover:-translate-y-0.5 hover:shadow-lg hover:shadow-purple-500/10 ${
         isDragging ? 'opacity-50 scale-105 shadow-2xl shadow-purple-500/20 border-purple-500/30' : ''
-      } ${task.is_blocked ? 'border-red-500/30' : isOverdue ? 'border-orange-500/30' : 'border-white/[0.06] hover:border-white/[0.12]'}`}
+      } ${task.is_blocked ? 'border-red-500/30 hover:border-red-500/50 hover:shadow-red-500/10' : isOverdue ? 'border-orange-500/30 hover:border-orange-500/50 hover:shadow-orange-500/10' : 'border-white/[0.06] hover:border-purple-500/30 hover:shadow-purple-500/15'}`}
     >
       {/* Blocked/Overdue indicator */}
       {(task.is_blocked || isOverdue) && (
