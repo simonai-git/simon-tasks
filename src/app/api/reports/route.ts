@@ -63,8 +63,10 @@ export async function GET() {
       byAssignee[task.assignee] = (byAssignee[task.assignee] || 0) + 1;
       
       // By contributor (who worked on this task)
+      // Falls back to assignee if worked_by is empty (for tasks before tracking was added)
       const workedBy: string[] = task.worked_by ? JSON.parse(task.worked_by) : [];
-      for (const contributor of workedBy) {
+      const contributors = workedBy.length > 0 ? workedBy : [task.assignee];
+      for (const contributor of contributors) {
         byContributor[contributor] = (byContributor[contributor] || 0) + 1;
         if (task.status === 'done') {
           completedByContributor[contributor] = (completedByContributor[contributor] || 0) + 1;
