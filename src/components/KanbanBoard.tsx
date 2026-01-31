@@ -454,7 +454,7 @@ export default function KanbanBoard() {
                 placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-40 sm:w-56 lg:w-80 pl-8 sm:pl-9 pr-7 py-1.5 sm:py-2 bg-white/5 border border-white/10 rounded-lg sm:rounded-xl text-white placeholder-white/40 text-xs sm:text-sm focus:outline-none focus:border-blue-500/50 focus:bg-white/8 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                className="w-48 sm:w-72 lg:w-96 pl-8 sm:pl-9 pr-7 py-1.5 sm:py-2 bg-white/5 border border-white/10 rounded-lg sm:rounded-xl text-white placeholder-white/40 text-xs sm:text-sm focus:outline-none focus:border-blue-500/50 focus:bg-white/8 focus:ring-2 focus:ring-blue-500/20 transition-all"
               />
               {searchQuery && (
                 <button
