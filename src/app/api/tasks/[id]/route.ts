@@ -34,7 +34,9 @@ export async function PATCH(
     }
     
     // Determine the actor making this change
-    const actor = isAuthorized(request) ? 'Simon' : 'Bogdan';
+    // Allow explicit agent identification via X-Agent header, otherwise infer from auth
+    const agentHeader = request.headers.get('x-agent');
+    const actor = agentHeader || (isAuthorized(request) ? 'Simon' : 'Bogdan');
     
     // Get project reviewer (if task belongs to a project)
     let reviewer = 'Bogdan'; // default
@@ -56,8 +58,9 @@ export async function PATCH(
       }
       // done → keep current assignee
       
-      // Track who worked on the task: add to worked_by when moving to in_progress, testing, or in_review (completed work)
-      if (['in_progress', 'testing', 'in_review'].includes(body.status)) {
+      // Track who worked on the task: add to worked_by for any work-related status transition
+      // This includes: in_progress (starting), testing (submitting), in_review (submitting), done (completing)
+      if (['in_progress', 'testing', 'in_review', 'done'].includes(body.status)) {
         // The actor is the one doing the work
         body.worked_by = addContributor(oldTask.worked_by, actor);
       }
