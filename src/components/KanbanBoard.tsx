@@ -106,7 +106,14 @@ const LiveIndicator = ({ enabled, onToggle }: LiveIndicatorProps) => (
     }`}
     title={enabled ? 'Live updates enabled - click to disable' : 'Live updates disabled - click to enable'}
   >
-    <span className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full flex-shrink-0 ${enabled ? 'bg-emerald-400' : 'bg-white/30'}`} />
+    {enabled ? (
+      <span className="relative flex h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+        <span className="relative inline-flex rounded-full h-2.5 w-2.5 sm:h-3 sm:w-3 bg-emerald-500"></span>
+      </span>
+    ) : (
+      <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full flex-shrink-0 bg-white/30" />
+    )}
     <span className="hidden sm:inline">{enabled ? 'Live Updates On' : 'Live Updates Off'}</span>
     <span className="sm:hidden">{enabled ? 'Live' : 'Off'}</span>
   </button>
