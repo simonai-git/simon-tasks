@@ -119,8 +119,15 @@ const LiveIndicator = ({ enabled, onToggle }: LiveIndicatorProps) => (
   </button>
 );
 
+// Project name lookup type
+interface Project {
+  id: string;
+  title: string;
+}
+
 export default function KanbanBoard() {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [projects, setProjects] = useState<Map<string, string>>(new Map()); // id -> title
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -187,7 +194,18 @@ export default function KanbanBoard() {
   useEffect(() => {
     fetchTasks();
     fetchWatcherConfig();
+    fetchProjects();
   }, []);
+
+  const fetchProjects = async () => {
+    try {
+      const res = await fetch('/api/projects');
+      const data: Project[] = await res.json();
+      setProjects(new Map(data.map(p => [p.id, p.title])));
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    }
+  };
 
   const fetchWatcherConfig = async () => {
     try {
@@ -467,6 +485,7 @@ export default function KanbanBoard() {
                 onDeleteTask={handleDeleteTask}
                 onViewTask={openDetailModal}
                 activeTaskIds={watcherConfig?.active_task_ids ? JSON.parse(watcherConfig.active_task_ids) : []}
+                projectNames={projects}
               />
             </div>
           ))}
@@ -490,6 +509,7 @@ export default function KanbanBoard() {
         onUpdate={handleTaskUpdate}
         onDelete={handleDeleteTask}
         isActive={detailTask ? (JSON.parse(watcherConfig?.active_task_ids || '[]') as string[]).includes(detailTask.id) : false}
+        projectName={detailTask?.project_id ? projects.get(detailTask.project_id) : undefined}
       />
     </div>
   );
