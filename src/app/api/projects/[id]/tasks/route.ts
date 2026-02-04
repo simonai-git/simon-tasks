@@ -44,7 +44,7 @@ export async function POST(
           title: taskData.title,
           description: taskData.description || null,
           status: taskData.status || 'todo',
-          assignee: taskData.assignee || 'Simon',
+          assignee: taskData.assignee ?? null,  // Allow null/unassigned tasks
           priority: taskData.priority || 'medium',
           due_date: taskData.due_date || null,
           project_id: projectId,
@@ -60,7 +60,7 @@ export async function POST(
       title: body.title,
       description: body.description || null,
       status: body.status || 'todo',
-      assignee: body.assignee || 'Simon',
+      assignee: body.assignee ?? null,  // Allow null/unassigned tasks
       priority: body.priority || 'medium',
       due_date: body.due_date || null,
       project_id: projectId,

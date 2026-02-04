@@ -31,7 +31,7 @@ function getTodayString(): string {
 export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [assignee, setAssignee] = useState('Simon');
+  const [assignee, setAssignee] = useState<string | null>(null);  // Default to unassigned
   const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [dueDate, setDueDate] = useState('');
   const [agents, setAgents] = useState<Agent[]>([]);
@@ -72,7 +72,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
     } else {
       setTitle('');
       setDescription('');
-      setAssignee('Simon');
+      setAssignee(null);  // Default to unassigned
       setPriority('medium');
       setDueDate('');
     }
@@ -93,7 +93,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
     onClose();
   };
 
-  const selectedAgent = agents.find(a => a.name === assignee) || agents[0];
+  const selectedAgent = assignee ? agents.find(a => a.name === assignee) : null;
 
   return (
     <div className="fixed inset-0 modal-backdrop flex items-end sm:items-center justify-center z-50 p-0 sm:p-4" onClick={onClose}>
@@ -159,6 +159,21 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: TaskModalPr
               </div>
             ) : (
               <div className="flex flex-wrap gap-2">
+                {/* Unassigned option */}
+                <button
+                  type="button"
+                  onClick={() => setAssignee(null)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all ${
+                    assignee === null
+                      ? 'bg-slate-500/20 border-slate-500/50 text-slate-300'
+                      : 'bg-white/5 border-white/10 text-white/50 hover:bg-white/10'
+                  }`}
+                >
+                  <span className="w-6 h-6 rounded-lg bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-sm">
+                    ❓
+                  </span>
+                  <span className="text-sm font-medium">Unassigned</span>
+                </button>
                 {agents.map((agent) => (
                   <button
                     key={agent.id}

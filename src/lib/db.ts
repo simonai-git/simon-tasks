@@ -43,6 +43,16 @@ async function initDb() {
       END $$;
     `);
     
+    // Make assignee nullable (allow unassigned tasks)
+    await client.query(`
+      DO $$ 
+      BEGIN
+        ALTER TABLE tasks ALTER COLUMN assignee DROP NOT NULL;
+        ALTER TABLE tasks ALTER COLUMN assignee DROP DEFAULT;
+      EXCEPTION WHEN OTHERS THEN NULL;
+      END $$;
+    `);
+    
     await client.query(`
       CREATE TABLE IF NOT EXISTS comments (
         id TEXT PRIMARY KEY,
@@ -231,7 +241,7 @@ export interface Task {
   title: string;
   description: string | null;
   status: 'todo' | 'in_progress' | 'testing' | 'in_review' | 'done';
-  assignee: string;
+  assignee: string | null;
   priority: 'low' | 'medium' | 'high';
   due_date: string | null;
   estimated_hours: number | null;
@@ -280,7 +290,7 @@ export async function createTask(task: Partial<Task> & { id: string; title: stri
       task.title,
       task.description || null,
       task.status || 'todo',
-      task.assignee || 'Simon',
+      task.assignee !== undefined ? task.assignee : null,  // Allow null assignee
       task.priority || 'medium',
       task.due_date || null,
       task.estimated_hours || null,

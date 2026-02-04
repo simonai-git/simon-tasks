@@ -18,6 +18,7 @@ import Column from './Column';
 import TaskModal from './TaskModal';
 import TaskDetailModal from './TaskDetailModal';
 import MetricsPanel from './MetricsPanel';
+import ConfirmModal from './ConfirmModal';
 import { useRealtimeUpdates } from '@/hooks/useRealtimeUpdates';
 
 const columns = [
@@ -140,6 +141,8 @@ export default function KanbanBoard() {
   const [sseEnabled, setSseEnabled] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; taskId: string | null; taskTitle: string }>({ isOpen: false, taskId: null, taskTitle: '' });
+  const [isDeleting, setIsDeleting] = useState(false);
   const { data: session } = useSession();
 
   // Filter tasks based on search query (matches title, project name, or task ID)
@@ -339,13 +342,27 @@ export default function KanbanBoard() {
     }
   };
 
-  const handleDeleteTask = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this task?')) return;
+  const openDeleteConfirm = (id: string) => {
+    const task = tasks.find(t => t.id === id);
+    setDeleteConfirm({ isOpen: true, taskId: id, taskTitle: task?.title || 'this task' });
+  };
+
+  const handleDeleteTask = async () => {
+    if (!deleteConfirm.taskId) return;
+    setIsDeleting(true);
     try {
-      await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
-      setTasks(prev => prev.filter(t => t.id !== id));
+      await fetch(`/api/tasks/${deleteConfirm.taskId}`, { method: 'DELETE' });
+      setTasks(prev => prev.filter(t => t.id !== deleteConfirm.taskId));
+      // Close detail modal if deleting the viewed task
+      if (detailTask?.id === deleteConfirm.taskId) {
+        setIsDetailOpen(false);
+        setDetailTask(null);
+      }
+      setDeleteConfirm({ isOpen: false, taskId: null, taskTitle: '' });
     } catch (error) {
       console.error('Error deleting task:', error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -567,7 +584,7 @@ export default function KanbanBoard() {
                 gradient={column.gradient}
                 tasks={sortByUpdatedAt(filteredTasks.filter(t => t.status === column.id))}
                 onEditTask={openEditModal}
-                onDeleteTask={handleDeleteTask}
+                onDeleteTask={openDeleteConfirm}
                 onViewTask={openDetailModal}
                 activeTaskIds={watcherConfig?.active_task_ids ? JSON.parse(watcherConfig.active_task_ids) : []}
                 projectNames={projects}
@@ -592,9 +609,21 @@ export default function KanbanBoard() {
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
         onUpdate={handleTaskUpdate}
-        onDelete={handleDeleteTask}
+        onDelete={openDeleteConfirm}
         isActive={detailTask ? (JSON.parse(watcherConfig?.active_task_ids || '[]') as string[]).includes(detailTask.id) : false}
         projectName={(detailTask?.project_id && projects.get(detailTask.project_id)) || "General Task"}
+      />
+
+      <ConfirmModal
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, taskId: null, taskTitle: '' })}
+        onConfirm={handleDeleteTask}
+        title="Delete Task"
+        message={`Are you sure you want to delete "${deleteConfirm.taskTitle}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        loading={isDeleting}
       />
     </div>
   );

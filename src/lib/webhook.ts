@@ -8,7 +8,7 @@ export interface WebhookPayload {
     title: string;
     description?: string | null;
     status: string;
-    assignee: string;
+    assignee: string | null;
     priority: string;
     due_date?: string | null;
   };
@@ -32,7 +32,7 @@ export async function sendWebhook(payload: WebhookPayload): Promise<void> {
       task.description || 'No description',
       '',
       `Priority: ${task.priority.toUpperCase()}`,
-      `Assignee: ${task.assignee}`,
+      `Assignee: ${task.assignee || 'Unassigned'}`,
       task.due_date ? `Due: ${task.due_date}` : '',
     ].filter(Boolean).join('\n');
 
@@ -67,7 +67,7 @@ export interface CommentWebhookPayload {
     id: string;
     title: string;
     status: string;
-    assignee: string;
+    assignee: string | null;
   };
   comment: {
     author: string;
@@ -86,7 +86,7 @@ export async function sendCommentWebhook(payload: CommentWebhookPayload): Promis
       comment.content,
       '',
       `Task Status: ${task.status}`,
-      `Assignee: ${task.assignee}`,
+      `Assignee: ${task.assignee || 'Unassigned'}`,
     ].join('\n');
 
     await fetch(NTFY_URL, {

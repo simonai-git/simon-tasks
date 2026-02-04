@@ -31,7 +31,8 @@ const assigneeConfig: Record<string, { color: string; emoji: string }> = {
   Alex: { color: 'from-amber-500 to-orange-500', emoji: '🧪' },
 };
 
-const defaultAssignee = { color: 'from-slate-500 to-slate-600', emoji: '🤖' };
+const defaultAssignee = { color: 'from-slate-500 to-slate-600', emoji: '👤' };
+const unassignedConfig = { color: 'from-slate-600 to-slate-700', emoji: '❓' };
 
 // Compare due date (YYYY-MM-DD string) against today in local time
 function isDateOverdue(dueDateStr: string): boolean {
@@ -76,7 +77,7 @@ const TaskCard = memo(function TaskCard({ task, onEdit, onDelete, onView, isActi
   };
 
   const priority = priorityConfig[task.priority];
-  const assignee = assigneeConfig[task.assignee] || defaultAssignee;
+  const assignee = task.assignee ? (assigneeConfig[task.assignee] || defaultAssignee) : unassignedConfig;
   const progress = task.progress || 0;
 
   return (
@@ -207,7 +208,7 @@ const TaskCard = memo(function TaskCard({ task, onEdit, onDelete, onView, isActi
             )}
           </div>
           <span className="text-[10px] sm:text-xs text-white/50 font-medium">
-            {task.assignee}
+            {task.assignee || 'Unassigned'}
           </span>
         </div>
       </div>

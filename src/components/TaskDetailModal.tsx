@@ -59,6 +59,7 @@ const assigneeConfig: Record<string, { color: string; emoji: string }> = {
 };
 
 const defaultAssigneeConfig = { color: 'from-slate-500 to-slate-600', emoji: '🤖' };
+const unassignedConfig = { color: 'from-slate-600 to-slate-700', emoji: '❓' };
 
 // Compare due date (YYYY-MM-DD string) against today in local time
 function isDateOverdue(dueDateStr: string): boolean {
@@ -246,10 +247,10 @@ function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDelete, isActive =
                 {priority.label}
               </span>
               <span className="flex items-center gap-1.5 text-white/50">
-                <span className={`w-5 h-5 rounded-full bg-gradient-to-br ${(assigneeConfig[task.assignee] || defaultAssigneeConfig).color} flex items-center justify-center text-[10px] shadow-sm`}>
-                  {(assigneeConfig[task.assignee] || defaultAssigneeConfig).emoji}
+                <span className={`w-5 h-5 rounded-full bg-gradient-to-br ${(task.assignee ? (assigneeConfig[task.assignee] || defaultAssigneeConfig) : unassignedConfig).color} flex items-center justify-center text-[10px] shadow-sm`}>
+                  {(task.assignee ? (assigneeConfig[task.assignee] || defaultAssigneeConfig) : unassignedConfig).emoji}
                 </span>
-                <span className="text-white/60">{task.assignee}</span>
+                <span className="text-white/60">{task.assignee || 'Unassigned'}</span>
               </span>
               {task.due_date && (
                 <span className={`flex items-center gap-1 ${isOverdue ? 'text-red-400' : 'text-white/40'}`}>
@@ -438,6 +439,18 @@ function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDelete, isActive =
               <div>
                 <label className="block text-xs sm:text-sm font-medium text-white/70 mb-2 sm:mb-3">Assignee</label>
                 <div className="flex flex-wrap gap-2">
+                  {/* Unassigned option */}
+                  <button
+                    onClick={() => handleFieldUpdate('assignee', null)}
+                    className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl border transition-all ${
+                      task.assignee === null
+                        ? 'bg-slate-500/20 border-slate-500/50 text-slate-300'
+                        : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'
+                    }`}
+                  >
+                    <span>❓</span>
+                    <span className="text-xs sm:text-sm font-medium">Unassigned</span>
+                  </button>
                   {/* Bogdan (owner) */}
                   <button
                     onClick={() => handleFieldUpdate('assignee', 'Bogdan')}
@@ -616,12 +629,7 @@ function TaskDetailModal({ task, isOpen, onClose, onUpdate, onDelete, isActive =
         {/* Footer */}
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-white/10 flex justify-between flex-shrink-0">
           <button
-            onClick={() => {
-              if (confirm('Are you sure you want to delete this task?')) {
-                onDelete(task.id);
-                onClose();
-              }
-            }}
+            onClick={() => onDelete(task.id)}
             className="px-3 sm:px-4 py-2 text-red-400 hover:bg-red-500/20 rounded-xl transition-all text-xs sm:text-sm"
           >
             Delete
