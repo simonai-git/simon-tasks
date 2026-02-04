@@ -38,6 +38,9 @@ export async function POST(request: NextRequest) {
       assignee: body.assignee || 'Simon',
       priority: body.priority || 'medium',
       due_date: body.due_date || null,
+      project_id: body.project_id || null,
+      estimated_hours: body.estimated_hours || null,
+      agent_context: body.agent_context || null,
     });
     
     // Send webhook notification
