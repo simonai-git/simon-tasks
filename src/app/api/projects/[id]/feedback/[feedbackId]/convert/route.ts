@@ -79,6 +79,7 @@ export async function POST(
 
     return NextResponse.json({ 
       success: true, 
+      task_id: task.id,
       task,
       message: 'Feedback converted to task successfully'
     }, { status: 201 });
